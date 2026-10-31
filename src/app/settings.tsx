@@ -4,13 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { ScreenScrollView } from "@/components/ScreenScrollView";
 
 import {
   mergeDatabaseFromBackup,
@@ -240,7 +241,7 @@ export default function SettingsScreen() {
         <Text style={styles.toolbarTitle}>{ss.title}</Text>
         <View style={styles.toolbarSpacer} />
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScreenScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>{ss.sectionUnits}</Text>
         <Text style={styles.fieldLabel}>{ss.language}</Text>
         <View style={styles.optionGroup}>
@@ -368,7 +369,7 @@ export default function SettingsScreen() {
             </Pressable>
           </>
         )}
-      </ScrollView>
+      </ScreenScrollView>
     </SafeAreaView>
   );
 }

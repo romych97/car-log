@@ -2,7 +2,6 @@ import { Link, router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -11,6 +10,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ActionSheetModal } from "@/components/ActionSheetModal";
+import { AppWordmark } from "@/components/AppWordmark";
+import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { VehiclePickerModal } from "@/components/VehiclePickerModal";
 import { setSelectedVehicleId } from "@/db/repositories/settings";
 import { computePeriodSummary } from "@/domain/vehicle/summary";
@@ -86,7 +87,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.appTitle}>{strings.home.title}</Text>
+        <AppWordmark />
         <Link href="/settings" asChild>
           <Pressable hitSlop={8}>
             <Text style={styles.link}>{strings.home.settings}</Text>
@@ -108,7 +109,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScreenScrollView contentContainerStyle={styles.content}>
           <Pressable
             style={styles.card}
             onPress={() =>
@@ -227,7 +228,7 @@ export default function HomeScreen() {
               </Text>
             </Pressable>
           )}
-        </ScrollView>
+        </ScreenScrollView>
       )}
 
       <VehiclePickerModal
@@ -269,10 +270,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-  },
-  appTitle: {
-    fontSize: 22,
-    fontWeight: "700",
   },
   link: {
     fontSize: 16,

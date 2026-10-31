@@ -2,7 +2,7 @@ import { useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
-  ScrollView,
+  Dimensions,
   StyleSheet,
   Text,
   View,
@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { ScreenScrollView } from "@/components/ScreenScrollView";
 
 import { listExpensesByVehicle } from "@/db/repositories/expenses";
 import { listFuelLogsByVehicle } from "@/db/repositories/fuelLogs";
@@ -23,11 +25,26 @@ import { t } from "@/i18n/translations";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Expense, ExpenseCategory, FuelLog } from "@/types/models";
+import type { CategorySpend } from "@/domain/stats/charts";
 import { formatMoneyMinor } from "@/utils/money";
 
-/** Space for Y-axis numeric labels (gifted-charts draws these outside `width`). */
-const Y_AXIS_LABEL_WIDTH = 56;
-const CHART_SIDE_INSET = 8;
+/** Width reserved for Y-axis labels (gifted-charts renders this beside `width`). */
+const Y_AXIS_NUMERIC_WIDTH = 38;
+const CHART_FRAME_MIN_HEIGHT = 220;
+const LINE_CHART_MIN_HEIGHT = 200;
+
+function estimateChartContainerWidth(): number {
+  return Math.floor(Dimensions.get("window").width - 64);
+}
+
+const CATEGORY_COLORS = [
+  "#208AEF",
+  "#34A853",
+  "#FBBC04",
+  "#EA4335",
+  "#9C27B0",
+  "#00ACC1",
+];
 
 function formatChartMoneyAxis(value: string): string {
   const n = Number(value);
@@ -43,17 +60,82 @@ function formatChartMoneyAxis(value: string): string {
   return String(Math.round(n));
 }
 
-function ChartFrame({ children }: { children: (plotWidth: number) => ReactNode }) {
-  const [plotWidth, setPlotWidth] = useState(0);
+function ChartFrame({
+  yAxisWidth = Y_AXIS_NUMERIC_WIDTH,
+  minHeight = CHART_FRAME_MIN_HEIGHT,
+  children,
+}: {
+  yAxisWidth?: number;
+  minHeight?: number;
+  children: (layout: { plotWidth: number; containerWidth: number }) => ReactNode;
+}) {
+  const [containerWidth, setContainerWidth] = useState(estimateChartContainerWidth);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
-    const inner = event.nativeEvent.layout.width - Y_AXIS_LABEL_WIDTH - CHART_SIDE_INSET;
-    setPlotWidth(Math.max(120, Math.floor(inner)));
+    const w = Math.floor(event.nativeEvent.layout.width);
+    if (w <= 0) return;
+    setContainerWidth((prev) => (Math.abs(prev - w) <= 1 ? prev : w));
   }, []);
 
+  const plotWidth = Math.max(100, containerWidth - yAxisWidth);
+
   return (
-    <View style={styles.chartFrame} onLayout={onLayout}>
-      {plotWidth > 0 ? children(plotWidth) : null}
+    <View
+      style={[styles.chartFrame, { minHeight }]}
+      onLayout={onLayout}
+    >
+      {children({ plotWidth, containerWidth })}
+    </View>
+  );
+}
+
+function chartCommonProps(containerWidth: number, yAxisWidth: number) {
+  return {
+    parentWidth: containerWidth,
+    yAxisLabelWidth: yAxisWidth,
+    formatYLabel: formatChartMoneyAxis,
+    yAxisTextStyle: styles.axisText,
+    xAxisLabelTextStyle: styles.axisText,
+  };
+}
+
+type CategorySpendBarsProps = {
+  rows: CategorySpend[];
+  locale: string;
+  categoryLabel: (category: ExpenseCategory) => string;
+};
+
+function CategorySpendBars({ rows, locale, categoryLabel }: CategorySpendBarsProps) {
+  const slice = rows.slice(0, 6);
+  const maxMinor = Math.max(...slice.map((r) => r.amountMinor), 1);
+
+  return (
+    <View style={styles.categoryChart}>
+      {slice.map((row, index) => {
+        const ratio = row.amountMinor / maxMinor;
+        return (
+          <View key={row.category} style={styles.categoryRow}>
+            <Text style={styles.categoryLabel} numberOfLines={1}>
+              {categoryLabel(row.category)}
+            </Text>
+            <View style={styles.categoryTrack}>
+              <View
+                style={[
+                  styles.categoryFill,
+                  {
+                    width: `${Math.max(ratio * 100, row.amountMinor > 0 ? 4 : 0)}%`,
+                    backgroundColor:
+                      CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.categoryAmount}>
+              {formatMoneyMinor(row.amountMinor, locale)}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -115,12 +197,6 @@ export default function StatsScreen() {
     frontColor: "#208AEF",
   }));
 
-  const categoryBars = categories.slice(0, 6).map((row, index) => ({
-    value: Math.round(row.amountMinor / 100),
-    label: categoryShort(row.category),
-    frontColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-  }));
-
   const lineData = consumption.map((p) => ({
     value: uf.chartConsumptionValue(p.value),
     label: p.label,
@@ -149,13 +225,13 @@ export default function StatsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{st.title}</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScreenScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{st.monthlySpend}</Text>
           <Text style={styles.hint}>{st.monthlyHint}</Text>
           {monthlyHasData ? (
             <ChartFrame>
-              {(plotWidth) => {
+              {({ plotWidth, containerWidth }) => {
                 const n = Math.max(barData.length, 1);
                 const spacing = 12;
                 const barWidth = Math.min(
@@ -164,20 +240,18 @@ export default function StatsScreen() {
                 );
                 return (
                   <BarChart
+                    {...chartCommonProps(containerWidth, Y_AXIS_NUMERIC_WIDTH)}
                     data={barData}
                     width={plotWidth}
                     barWidth={Math.max(barWidth, 8)}
                     spacing={spacing}
-                    initialSpacing={12}
-                    endSpacing={12}
+                    initialSpacing={8}
+                    endSpacing={8}
                     roundedTop
-                    yAxisLabelWidth={Y_AXIS_LABEL_WIDTH}
-                    formatYLabel={formatChartMoneyAxis}
-                    yAxisTextStyle={styles.axisText}
-                    xAxisLabelTextStyle={styles.axisText}
                     noOfSections={4}
                     maxValue={Math.max(...barData.map((d) => d.value), 1) * 1.2}
                     disableScroll
+                    isAnimated={false}
                   />
                 );
               }}
@@ -196,36 +270,11 @@ export default function StatsScreen() {
           <Text style={styles.cardTitle}>{st.byCategory}</Text>
           <Text style={styles.hint}>{st.byCategoryHint}</Text>
           {categoryHasData ? (
-            <>
-              <ChartFrame>
-                {(plotWidth) => (
-                  <BarChart
-                    horizontal
-                    data={categoryBars}
-                    width={plotWidth}
-                    barWidth={22}
-                    spacing={28}
-                    initialSpacing={8}
-                    endSpacing={12}
-                    yAxisLabelWidth={Y_AXIS_LABEL_WIDTH}
-                    formatYLabel={formatChartMoneyAxis}
-                    yAxisTextStyle={styles.axisText}
-                    xAxisLabelTextStyle={styles.axisText}
-                    noOfSections={4}
-                    maxValue={
-                      Math.max(...categoryBars.map((d) => d.value), 1) * 1.2
-                    }
-                    disableScroll
-                  />
-                )}
-              </ChartFrame>
-              {categories.slice(0, 6).map((row) => (
-                <Text key={row.category} style={styles.categoryLine}>
-                  {strings.expense.categories[row.category]}:{" "}
-                  {formatMoneyMinor(row.amountMinor, locale)}
-                </Text>
-              ))}
-            </>
+            <CategorySpendBars
+              rows={categories}
+              locale={locale}
+              categoryLabel={(c) => strings.expense.categories[c]}
+            />
           ) : (
             <Text style={styles.placeholder}>{st.noData}</Text>
           )}
@@ -235,22 +284,21 @@ export default function StatsScreen() {
           <Text style={styles.cardTitle}>{st.consumption}</Text>
           <Text style={styles.hint}>{consumptionHintText}</Text>
           {lineData.length >= 2 ? (
-            <ChartFrame>
-              {(plotWidth) => (
+            <ChartFrame minHeight={LINE_CHART_MIN_HEIGHT}>
+              {({ plotWidth, containerWidth }) => (
                 <LineChart
+                  {...chartCommonProps(containerWidth, Y_AXIS_NUMERIC_WIDTH)}
                   data={lineData}
                   width={plotWidth}
                   spacing={40}
-                  initialSpacing={12}
-                  endSpacing={12}
+                  initialSpacing={8}
+                  endSpacing={8}
                   color="#208AEF"
                   thickness={2}
-                  yAxisLabelWidth={Y_AXIS_LABEL_WIDTH}
-                  yAxisTextStyle={styles.axisText}
-                  xAxisLabelTextStyle={styles.axisText}
                   noOfSections={4}
                   maxValue={Math.max(...lineData.map((d) => d.value), 1) * 1.15}
                   disableScroll
+                  isAnimated={false}
                 />
               )}
             </ChartFrame>
@@ -258,15 +306,9 @@ export default function StatsScreen() {
             <Text style={styles.placeholder}>{st.noData}</Text>
           )}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
     </SafeAreaView>
   );
-}
-
-const CATEGORY_COLORS = ["#208AEF", "#34A853", "#FBBC04", "#EA4335", "#9C27B0", "#00ACC1"];
-
-function categoryShort(category: ExpenseCategory): string {
-  return category.slice(0, 3);
 }
 
 const styles = StyleSheet.create({
@@ -292,9 +334,29 @@ const styles = StyleSheet.create({
     width: "100%",
     overflow: "hidden",
     alignSelf: "stretch",
+    marginLeft: 0,
+    paddingLeft: 0,
   },
   placeholder: { fontSize: 15, color: "#888", paddingVertical: 24 },
   axisText: { fontSize: 10, color: "#666" },
   legend: { fontSize: 12, color: "#888", marginTop: 8 },
-  categoryLine: { fontSize: 14, color: "#444", marginTop: 6 },
+  categoryChart: { gap: 12 },
+  categoryRow: { gap: 6 },
+  categoryLabel: { fontSize: 14, fontWeight: "500", color: "#333" },
+  categoryTrack: {
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: "#EFEFF0",
+    overflow: "hidden",
+  },
+  categoryFill: {
+    height: "100%",
+    borderRadius: 6,
+    minWidth: 4,
+  },
+  categoryAmount: {
+    fontSize: 13,
+    color: "#666",
+    alignSelf: "flex-end",
+  },
 });
