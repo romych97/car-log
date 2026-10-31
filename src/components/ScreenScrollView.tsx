@@ -1,13 +1,11 @@
-import type { ScrollViewProps } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import { ScrollView, type ScrollViewProps } from "react-native";
 
-/** ScrollView that plays nicely with charts and nested gestures (RNGH root). */
+/** Main screen scroll — use RN ScrollView (RNGH ScrollView can block vertical pan). */
 export function ScreenScrollView(props: ScrollViewProps) {
   return (
     <ScrollView
-      nestedScrollEnabled
       keyboardShouldPersistTaps="handled"
-      overScrollMode="never"
+      removeClippedSubviews={false}
       {...props}
     />
   );
