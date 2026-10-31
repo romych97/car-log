@@ -1,6 +1,7 @@
 import type {
   AppLanguage,
   DistanceUnit,
+  FuelLog,
   FuelType,
   Settings,
   Vehicle,
@@ -28,6 +29,32 @@ export type SettingsRow = {
   is_premium: number;
   selected_vehicle_id: string | null;
 };
+
+export type FuelLogRow = {
+  id: string;
+  vehicle_id: string;
+  date: number;
+  odometer: number;
+  volume: number;
+  price_per_unit: number;
+  total_cost: number;
+  full_tank: number;
+  note: string | null;
+};
+
+export function rowToFuelLog(row: FuelLogRow): FuelLog {
+  return {
+    id: row.id,
+    vehicleId: row.vehicle_id,
+    date: row.date,
+    odometer: row.odometer,
+    volume: row.volume,
+    pricePerUnit: row.price_per_unit,
+    totalCost: row.total_cost,
+    fullTank: row.full_tank !== 0,
+    note: row.note ?? undefined,
+  };
+}
 
 export function rowToVehicle(row: VehicleRow): Vehicle {
   return {

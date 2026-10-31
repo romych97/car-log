@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { VehiclePickerModal } from "@/components/VehiclePickerModal";
 import { setSelectedVehicleId } from "@/db/repositories/settings";
+import { useFuelLogs, useFuelSummary } from "@/hooks/useFuelLogs";
 import { useVehicleOdometer, useVehicles } from "@/hooks/useVehicles";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -29,13 +30,16 @@ export default function HomeScreen() {
     vehicles.find((v) => v.id === selectedVehicleId) ?? null;
   const { odometer, refresh: refreshOdometer } =
     useVehicleOdometer(selectedVehicle);
+  const { logs, refresh: refreshFuel } = useFuelLogs(db, selectedVehicleId);
+  const { avgConsumption } = useFuelSummary(logs);
 
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh]),
+      refreshFuel();
+    }, [refresh, refreshFuel]),
   );
 
   useFocusEffect(
@@ -105,9 +109,28 @@ export default function HomeScreen() {
             )}
           </Pressable>
 
-          <Text style={styles.placeholder}>{strings.home.placeholderStats}</Text>
+          <View style={styles.card}>
+            <Text style={styles.statLabel}>{strings.home.avgConsumption}</Text>
+            {avgConsumption != null ? (
+              <Text style={styles.statValue}>
+                {avgConsumption.toFixed(1)} {strings.common.l100km}
+              </Text>
+            ) : (
+              <Text style={styles.statPlaceholder}>
+                {strings.home.noConsumptionYet}
+              </Text>
+            )}
+            <Text style={styles.statHint}>{strings.home.avgConsumptionHint}</Text>
+          </View>
 
-          {(isPremium || vehicles.length < 1) && (
+          <Pressable
+            style={styles.primaryButton}
+            onPress={() => router.push("/fuel/new")}
+          >
+            <Text style={styles.primaryButtonText}>{strings.home.addFuel}</Text>
+          </Pressable>
+
+          {(isPremium || vehicles.length < 2) && (
             <Pressable
               style={styles.secondaryButton}
               onPress={() => router.push("/vehicle/new")}
@@ -204,10 +227,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#208AEF",
   },
-  placeholder: {
+  statLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  statValue: {
+    fontSize: 26,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  statPlaceholder: {
     fontSize: 15,
     color: "#666",
+    marginTop: 4,
     lineHeight: 21,
+  },
+  statHint: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 8,
   },
   primaryButton: {
     backgroundColor: "#208AEF",

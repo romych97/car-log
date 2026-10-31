@@ -56,10 +56,17 @@ export async function getCurrentOdometer(
   db: SQLiteDatabase,
   vehicleId: string,
   initialOdometer: number,
+  excludeFuelLogId?: string,
 ): Promise<number> {
+  const fuelSql = excludeFuelLogId
+    ? "SELECT MAX(odometer) AS maxOdometer FROM fuel_logs WHERE vehicle_id = ? AND id != ?"
+    : "SELECT MAX(odometer) AS maxOdometer FROM fuel_logs WHERE vehicle_id = ?";
+  const fuelParams = excludeFuelLogId
+    ? [vehicleId, excludeFuelLogId]
+    : [vehicleId];
   const fuelMax = await db.getFirstAsync<{ maxOdometer: number | null }>(
-    "SELECT MAX(odometer) AS maxOdometer FROM fuel_logs WHERE vehicle_id = ?",
-    vehicleId,
+    fuelSql,
+    ...fuelParams,
   );
   const expenseMax = await db.getFirstAsync<{ maxOdometer: number | null }>(
     "SELECT MAX(odometer) AS maxOdometer FROM expenses WHERE vehicle_id = ? AND odometer IS NOT NULL",

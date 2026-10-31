@@ -15,6 +15,14 @@ export default function RootLayout() {
             name="vehicle/new"
             options={{ presentation: "modal", headerShown: false }}
           />
+          <Stack.Screen
+            name="fuel/new"
+            options={{ presentation: "modal", headerShown: false }}
+          />
+          <Stack.Screen
+            name="fuel/[id]"
+            options={{ presentation: "modal", headerShown: false }}
+          />
           <Stack.Screen name="settings" options={{ title: "Settings" }} />
         </Stack>
         <StatusBar style="auto" />
