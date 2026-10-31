@@ -1,18 +1,24 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { SQLiteProvider } from "expo-sqlite";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { AppBootstrap } from "@/components/AppBootstrap";
+import { migrateDbIfNeeded } from "@/db/migrate";
 
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <SQLiteProvider databaseName="carlog.db" onInit={migrateDbIfNeeded}>
+      <AppBootstrap>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="vehicle/new"
+            options={{ presentation: "modal", headerShown: false }}
+          />
+          <Stack.Screen name="settings" options={{ title: "Settings" }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </AppBootstrap>
+    </SQLiteProvider>
   );
 }
