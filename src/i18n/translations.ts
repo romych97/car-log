@@ -199,6 +199,9 @@ const ru = {
       "Текущие записи будут удалены и заменены содержимым файла. Статус Premium на устройстве сохранится.",
     importDone: "Данные восстановлены",
     importError: "Не удалось прочитать файл резервной копии",
+    importLastExport: "Импорт последнего экспорта",
+    importLastExportHint:
+      "Файл из кэша приложения (сразу после «Экспорт», без выбора в Downloads).",
     sharingUnavailable: "На этом устройстве нельзя поделиться файлом",
     premium: "CarLog Premium",
     premiumActive: "Активен",
@@ -425,6 +428,9 @@ const en = {
       "Current entries will be removed and replaced from the file. Premium status on this device is kept.",
     importDone: "Data restored",
     importError: "Could not read backup file",
+    importLastExport: "Import last export",
+    importLastExportHint:
+      "File from app cache (right after Export, without picking from Downloads).",
     sharingUnavailable: "Sharing is not available on this device",
     premium: "CarLog Premium",
     premiumActive: "Active",

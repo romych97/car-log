@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { replaceDatabaseFromBackup } from "@/backup/database";
-import { exportAndShareBackup, readBackupFromPicker } from "@/backup/share";
-import { parseBackupJson } from "@/backup/serialize";
+import { exportAndShareBackup, readBackupFromPicker, readLastExportBackup, getLastExportCacheUri } from "@/backup/share";
+import { parseBackupJson, importErrorMessage } from "@/backup/serialize";
 import { saveSettings } from "@/db/repositories/settings";
 import { syncAllReminderNotifications } from "@/notifications/reminders";
 import { t } from "@/i18n/translations";
@@ -57,6 +57,42 @@ export default function SettingsScreen() {
   const ss = strings.settings;
   const [currencyDraft, setCurrencyDraft] = useState(currency);
   const [busy, setBusy] = useState(false);
+  const [hasLastExport, setHasLastExport] = useState(
+    () => getLastExportCacheUri() != null,
+  );
+
+  const applyBackupRaw = useCallback(
+    async (loadRaw: () => Promise<string>) => {
+      setBusy(true);
+      try {
+        const raw = await loadRaw();
+        const backup = parseBackupJson(raw);
+        const merged = await replaceDatabaseFromBackup(db, backup);
+        hydrate(merged);
+        try {
+          await syncAllReminderNotifications(db, merged.language);
+        } catch (syncErr) {
+          console.error("[carlog] Notification resync after import:", syncErr);
+        }
+        Alert.alert(ss.importDone);
+      } catch (err) {
+        if (String(err).includes("canceled")) return;
+        console.error("[carlog] Backup import failed:", err);
+        Alert.alert(ss.importError, importErrorMessage(err));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [db, hydrate, ss],
+  );
+
+  const runImport = useCallback(() => {
+    applyBackupRaw(readBackupFromPicker);
+  }, [applyBackupRaw]);
+
+  const runImportLastExport = useCallback(() => {
+    applyBackupRaw(readLastExportBackup);
+  }, [applyBackupRaw]);
 
   const persist = useCallback(
     async (partial: Partial<Settings>) => {
@@ -72,46 +108,40 @@ export default function SettingsScreen() {
     setBusy(true);
     try {
       await exportAndShareBackup(db);
+      setHasLastExport(true);
       Alert.alert(ss.exportDone);
     } catch (err) {
       if (String(err).includes("sharing_unavailable")) {
         Alert.alert(ss.sharingUnavailable);
       } else {
-        Alert.alert(ss.importError);
+        Alert.alert(ss.importError, importErrorMessage(err));
       }
     } finally {
       setBusy(false);
     }
   }, [db, ss]);
 
-  const runImport = useCallback(async () => {
-    setBusy(true);
-    try {
-      const raw = await readBackupFromPicker();
-      const backup = parseBackupJson(raw);
-      const merged = await replaceDatabaseFromBackup(db, backup);
-      hydrate(merged);
-      try {
-        await syncAllReminderNotifications(db, merged.language);
-      } catch (syncErr) {
-        console.warn("[carlog] Notification resync after import:", syncErr);
-      }
-      Alert.alert(ss.importDone);
-    } catch (err) {
-      if (String(err).includes("canceled")) return;
-      console.warn("[carlog] Backup import failed:", err);
-      Alert.alert(ss.importError);
-    } finally {
-      setBusy(false);
-    }
-  }, [db, hydrate, ss]);
-
   const onImport = useCallback(() => {
     Alert.alert(ss.importConfirmTitle, ss.importConfirmMessage, [
       { text: strings.common.cancel, style: "cancel" },
-      { text: ss.importBackup, style: "destructive", onPress: runImport },
+      {
+        text: ss.importBackup,
+        style: "destructive",
+        onPress: () => runImport(),
+      },
     ]);
   }, [runImport, ss, strings.common.cancel]);
+
+  const onImportLastExport = useCallback(() => {
+    Alert.alert(ss.importConfirmTitle, ss.importConfirmMessage, [
+      { text: strings.common.cancel, style: "cancel" },
+      {
+        text: ss.importLastExport,
+        style: "destructive",
+        onPress: () => runImportLastExport(),
+      },
+    ]);
+  }, [runImportLastExport, ss, strings.common.cancel]);
 
   const saveCurrency = useCallback(async () => {
     const code = currencyDraft.trim().toUpperCase().slice(0, 8);
@@ -207,6 +237,18 @@ export default function SettingsScreen() {
             <Text style={styles.secondaryBtnText}>{ss.importBackup}</Text>
           </Pressable>
         </View>
+        {hasLastExport && (
+          <>
+            <Text style={styles.hint}>{ss.importLastExportHint}</Text>
+            <Pressable
+              style={[styles.secondaryBtn, styles.fullWidthBtn, busy && styles.btnDisabled]}
+              onPress={onImportLastExport}
+              disabled={busy}
+            >
+              <Text style={styles.secondaryBtnText}>{ss.importLastExport}</Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -279,5 +321,6 @@ const styles = StyleSheet.create({
     borderColor: "#208AEF",
   },
   secondaryBtnText: { color: "#208AEF", fontWeight: "600" },
+  fullWidthBtn: { marginTop: 8 },
   btnDisabled: { opacity: 0.5 },
 });

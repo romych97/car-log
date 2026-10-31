@@ -1,4 +1,3 @@
-import { File } from "expo-file-system";
 import * as DocumentPicker from "expo-document-picker";
 import type { DocumentPickerAsset } from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
@@ -7,20 +6,33 @@ import { Platform } from "react-native";
 import type { SQLiteDatabase } from "expo-sqlite";
 
 import { buildBackupPayload } from "@/backup/database";
-import { normalizeBackupRaw } from "@/backup/serialize";
+import { readTextFromUri } from "@/backup/readUri";
+import { normalizeBackupRaw } from "@/backup/text";
 
 function backupFileName(date = new Date()): string {
   const stamp = date.toISOString().replace(/[:.]/g, "-").slice(0, 19);
   return `carlog-backup-${stamp}.json`;
 }
 
+/** Last export in app cache — same session import without document picker. */
+let lastExportCacheUri: string | null = null;
+
+export function getLastExportCacheUri(): string | null {
+  return lastExportCacheUri;
+}
+
 export async function exportAndShareBackup(db: SQLiteDatabase): Promise<void> {
   const payload = await buildBackupPayload(db);
   const json = JSON.stringify(payload, null, 2);
-  const uri = `${FileSystem.cacheDirectory}${backupFileName()}`;
+  const cacheDir = FileSystem.cacheDirectory;
+  if (!cacheDir) {
+    throw new Error("no_cache_dir");
+  }
+  const uri = `${cacheDir}${backupFileName()}`;
   await FileSystem.writeAsStringAsync(uri, json, {
     encoding: FileSystem.EncodingType.UTF8,
   });
+  lastExportCacheUri = uri;
 
   if (Platform.OS === "web") {
     const blob = new Blob([json], { type: "application/json" });
@@ -46,34 +58,15 @@ export async function exportAndShareBackup(db: SQLiteDatabase): Promise<void> {
 async function readTextFromDocumentAsset(
   asset: DocumentPickerAsset,
 ): Promise<string> {
-  if (Platform.OS === "web") {
-    if (asset.file) {
-      return asset.file.text();
-    }
-    const response = await fetch(asset.uri);
-    if (!response.ok) {
-      throw new Error("read_failed");
-    }
-    return response.text();
+  if (Platform.OS === "web" && asset.file) {
+    return normalizeBackupRaw(await asset.file.text());
   }
-
-  try {
-    return await new File(asset.uri).text();
-  } catch {
-    return FileSystem.readAsStringAsync(asset.uri, {
-      encoding: FileSystem.EncodingType.UTF8,
-    });
-  }
+  return readTextFromUri(asset.uri);
 }
 
 export async function readBackupFromPicker(): Promise<string> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: [
-      "application/json",
-      "text/json",
-      "text/plain",
-      "application/octet-stream",
-    ],
+    type: "*/*",
     copyToCacheDirectory: true,
     multiple: false,
     base64: false,
@@ -83,6 +76,16 @@ export async function readBackupFromPicker(): Promise<string> {
     throw new Error("canceled");
   }
 
-  const raw = await readTextFromDocumentAsset(result.assets[0]);
-  return normalizeBackupRaw(raw);
+  return readTextFromDocumentAsset(result.assets[0]);
+}
+
+export async function readLastExportBackup(): Promise<string> {
+  if (!lastExportCacheUri) {
+    throw new Error("no_last_export");
+  }
+  const info = await FileSystem.getInfoAsync(lastExportCacheUri);
+  if (!info.exists) {
+    throw new Error("no_last_export");
+  }
+  return readTextFromUri(lastExportCacheUri);
 }

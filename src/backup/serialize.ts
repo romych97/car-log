@@ -1,9 +1,8 @@
 import type { CarLogBackup } from "@/types/backup";
 import { DATA_SCHEMA_VERSION } from "@/types/models";
+import { normalizeBackupRaw } from "@/backup/text";
 
-export function normalizeBackupRaw(raw: string): string {
-  return raw.replace(/^\uFEFF/, "").trim();
-}
+export { importErrorMessage, normalizeBackupRaw } from "@/backup/text";
 
 export function parseBackupJson(raw: string): CarLogBackup {
   const parsed = JSON.parse(normalizeBackupRaw(raw)) as unknown;
