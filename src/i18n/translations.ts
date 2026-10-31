@@ -231,6 +231,7 @@ const ru = {
     importMerge: "Объединить",
     exportPdf: "Отчёт PDF",
     pdfDone: "PDF готов к отправке",
+    pdfShareError: "Не удалось отправить PDF",
     devBuildHint:
       "Локальные уведомления стабильнее в development/release сборке, не в Expo Go.",
     manageVehicles: "Автомобили",
@@ -502,6 +503,7 @@ const en = {
     importMerge: "Merge",
     exportPdf: "Export PDF report",
     pdfDone: "PDF ready to share",
+    pdfShareError: "Could not share PDF",
     devBuildHint:
       "Local notifications are more reliable in a dev/release build than in Expo Go.",
     manageVehicles: "Vehicles",

@@ -44,7 +44,7 @@ export function buildMonthlySpendSeries(
 
     points.push({
       key: String(monthStart),
-      label: format(monthStart, "LLL yy", { locale }),
+      label: format(monthStart, "LLL", { locale }),
       monthStart,
       fuelMinor,
       expenseMinor,

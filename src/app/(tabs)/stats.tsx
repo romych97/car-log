@@ -1,12 +1,13 @@
 import { useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { memo, useCallback, useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { Text, View, type ScrollViewInstance } from "react-native";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import {
+  STATS_CHART_Y_AXIS_WIDTH,
   StatsChartFrame,
 } from "@/components/StatsChartFrame";
 import { listExpensesByVehicle } from "@/db/repositories/expenses";
@@ -27,7 +28,8 @@ import type { AppColors } from "@/theme/colors";
 import type { Expense, ExpenseCategory, FuelLog } from "@/types/models";
 import { formatMoneyMinor } from "@/utils/money";
 
-const MONTHLY_CHART_HEIGHT = 220;
+const MONTHLY_PLOT_HEIGHT = 208;
+const MONTHLY_BLOCK_MIN_HEIGHT = MONTHLY_PLOT_HEIGHT + 36;
 const CONSUMPTION_CHART_HEIGHT = 200;
 
 const CATEGORY_COLORS = [
@@ -57,6 +59,7 @@ function chartCommonProps(
   containerWidth: number,
   yAxisWidth: number,
   axisTextStyle: { fontSize: number; color: string },
+  colors: AppColors,
 ) {
   return {
     parentWidth: containerWidth,
@@ -64,6 +67,13 @@ function chartCommonProps(
     formatYLabel: formatChartMoneyAxis,
     yAxisTextStyle: axisTextStyle,
     xAxisLabelTextStyle: axisTextStyle,
+    rulesType: "solid" as const,
+    rulesColor: colors.border,
+    rulesThickness: 1,
+    xAxisColor: colors.border,
+    yAxisColor: colors.border,
+    xAxisThickness: 1,
+    yAxisThickness: 1,
   };
 }
 
@@ -118,44 +128,105 @@ type MonthlyBarChartProps = {
   barData: { value: number; label: string; frontColor: string }[];
   colors: AppColors;
   axisTextStyle: { fontSize: number; color: string };
+  monthLabelStyle: { fontSize: number; color: string; marginTop: number };
 };
+
+function MonthlyMonthLabels({
+  labels,
+  labelStyle,
+}: {
+  labels: string[];
+  labelStyle: { fontSize: number; color: string; marginTop: number };
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        marginLeft: STATS_CHART_Y_AXIS_WIDTH,
+        marginTop: labelStyle.marginTop,
+        paddingHorizontal: 6,
+      }}
+    >
+      {labels.map((label, index) => (
+        <Text
+          key={`${label}-${index}`}
+          style={{
+            flex: 1,
+            textAlign: "center",
+            fontSize: labelStyle.fontSize,
+            color: labelStyle.color,
+          }}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      ))}
+    </View>
+  );
+}
 
 const MonthlyBarChart = memo(function MonthlyBarChart({
   barData,
   colors,
   axisTextStyle,
+  monthLabelStyle,
 }: MonthlyBarChartProps) {
   const maxValue = Math.max(...barData.map((d) => d.value), 1) * 1.2;
+  const chartData = useMemo(
+    () => barData.map((d) => ({ ...d, label: "" })),
+    [barData],
+  );
+  const monthLabels = useMemo(
+    () => barData.map((d) => d.label),
+    [barData],
+  );
 
   return (
-    <StatsChartFrame height={MONTHLY_CHART_HEIGHT}>
-      {({ plotWidth, containerWidth, height, yAxisWidth }) => {
-        const n = Math.max(barData.length, 1);
-        const spacing = 12;
-        const barWidth = Math.min(
-          28,
-          Math.floor((plotWidth - 24 - spacing * (n - 1)) / n),
-        );
-        return (
-          <BarChart
-            {...chartCommonProps(containerWidth, yAxisWidth, axisTextStyle)}
-            data={barData}
-            width={plotWidth}
-            height={height}
-            barWidth={Math.max(barWidth, 8)}
-            spacing={spacing}
-            initialSpacing={8}
-            endSpacing={8}
-            roundedTop
-            noOfSections={4}
-            maxValue={maxValue}
-            disableScroll
-            isAnimated={false}
-            backgroundColor={colors.chartBackground}
-          />
-        );
-      }}
-    </StatsChartFrame>
+    <>
+      <StatsChartFrame height={MONTHLY_PLOT_HEIGHT}>
+        {({ plotWidth, containerWidth, height, yAxisWidth }) => {
+          const n = Math.max(chartData.length, 1);
+          const spacing = 8;
+          const side = 6;
+          const barWidth = Math.max(
+            8,
+            Math.floor((plotWidth - side * 2 - spacing * (n - 1)) / n),
+          );
+          const labelWidth = barWidth + spacing;
+
+          return (
+            <BarChart
+              {...chartCommonProps(
+                containerWidth,
+                yAxisWidth,
+                axisTextStyle,
+                colors,
+              )}
+              data={chartData}
+              width={plotWidth}
+              height={height}
+              barWidth={barWidth}
+              spacing={spacing}
+              labelWidth={labelWidth}
+              initialSpacing={side}
+              endSpacing={side}
+              adjustToWidth
+              roundedTop={false}
+              roundedBottom={false}
+              barBorderRadius={0}
+              xAxisLabelsHeight={0}
+              labelsExtraHeight={0}
+              noOfSections={4}
+              maxValue={maxValue}
+              disableScroll
+              isAnimated={false}
+              backgroundColor={colors.chartBackground}
+            />
+          );
+        }}
+      </StatsChartFrame>
+      <MonthlyMonthLabels labels={monthLabels} labelStyle={monthLabelStyle} />
+    </>
   );
 });
 
@@ -176,7 +247,12 @@ const ConsumptionLineChart = memo(function ConsumptionLineChart({
     <StatsChartFrame height={CONSUMPTION_CHART_HEIGHT}>
       {({ plotWidth, containerWidth, height, yAxisWidth }) => (
         <LineChart
-          {...chartCommonProps(containerWidth, yAxisWidth, axisTextStyle)}
+          {...chartCommonProps(
+            containerWidth,
+            yAxisWidth,
+            axisTextStyle,
+            colors,
+          )}
           data={lineData}
           width={plotWidth}
           height={height}
@@ -210,6 +286,14 @@ export default function StatsScreen() {
     () => ({ fontSize: 10, color: colors.chartAxis }),
     [colors.chartAxis],
   );
+  const monthLabelStyle = useMemo(
+    () => ({
+      fontSize: styles.monthLabels.fontSize,
+      color: styles.monthLabels.color,
+      marginTop: styles.monthLabels.marginTop,
+    }),
+    [styles.monthLabels],
+  );
   const strings = useMemo(() => t(language), [language]);
   const uf = useUnitFormat();
   const st = strings.stats;
@@ -217,6 +301,8 @@ export default function StatsScreen() {
 
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const scrollYRef = useRef(0);
 
   const refresh = useCallback(async () => {
     if (!vehicleId) {
@@ -224,12 +310,21 @@ export default function StatsScreen() {
       setExpenses([]);
       return;
     }
+    const savedY = scrollYRef.current;
     const [fuel, ex] = await Promise.all([
       listFuelLogsByVehicle(db, vehicleId),
       listExpensesByVehicle(db, vehicleId),
     ]);
     setFuelLogs(fuel);
     setExpenses(ex);
+    if (savedY > 0) {
+      scrollYRef.current = savedY;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollTo({ y: savedY, animated: false });
+        });
+      });
+    }
   }, [db, vehicleId]);
 
   useFocusEffect(
@@ -299,24 +394,37 @@ export default function StatsScreen() {
         <Text style={styles.title}>{st.title}</Text>
       </View>
       <ScreenScrollView
-        contentContainerStyle={[styles.content, styles.contentGap]}
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        scrollEventThrottle={16}
+        onScroll={(event) => {
+          scrollYRef.current = event.nativeEvent.contentOffset.y;
+        }}
       >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{st.monthlySpend}</Text>
           <Text style={styles.hint}>{st.monthlyHint}</Text>
           {monthlyHasData ? (
-            <MonthlyBarChart
-              barData={barData}
-              colors={colors}
-              axisTextStyle={axisTextStyle}
-            />
+            <View
+              style={[
+                styles.monthlyChartBlock,
+                { minHeight: MONTHLY_BLOCK_MIN_HEIGHT },
+              ]}
+              collapsable={false}
+            >
+              <MonthlyBarChart
+                barData={barData}
+                colors={colors}
+                axisTextStyle={axisTextStyle}
+                monthLabelStyle={monthLabelStyle}
+              />
+              <Text style={styles.legend}>
+                {st.chartFuel} + {st.chartOther} · {currencyCode}
+              </Text>
+            </View>
           ) : (
             <Text style={styles.placeholder}>{st.noData}</Text>
-          )}
-          {monthlyHasData && (
-            <Text style={styles.legend}>
-              {st.chartFuel} + {st.chartOther} · {currencyCode}
-            </Text>
           )}
         </View>
 
@@ -339,11 +447,13 @@ export default function StatsScreen() {
           <Text style={styles.cardTitle}>{st.consumption}</Text>
           <Text style={styles.hint}>{consumptionHintText}</Text>
           {lineData.length >= 2 ? (
-            <ConsumptionLineChart
-              lineData={lineData}
-              colors={colors}
-              axisTextStyle={axisTextStyle}
-            />
+            <View style={styles.chartSlot} collapsable={false}>
+              <ConsumptionLineChart
+                lineData={lineData}
+                colors={colors}
+                axisTextStyle={axisTextStyle}
+              />
+            </View>
           ) : (
             <Text style={styles.placeholder}>{st.noData}</Text>
           )}

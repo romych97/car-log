@@ -1,12 +1,13 @@
 import { router } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Pressable,
   Text,
   TextInput,
   View,
+  type ScrollViewInstance,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -88,6 +89,16 @@ export default function SettingsScreen() {
     () => getLastExportCacheUri() != null,
   );
   const purchasesReady = isPurchasesConfigured();
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const scrollYRef = useRef(0);
+
+  const restoreScroll = useCallback(() => {
+    const y = scrollYRef.current;
+    if (y <= 0) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y, animated: false });
+    });
+  }, []);
 
   useEffect(() => {
     loadLastExportUriFromDisk().then((uri) => {
@@ -113,7 +124,6 @@ export default function SettingsScreen() {
         } catch (syncErr) {
           console.error("[carlog] Notification resync after import:", syncErr);
         }
-        Alert.alert(ss.importDone);
       } catch (err) {
         if (String(err).includes("canceled")) return;
         console.error("[carlog] Backup import failed:", err);
@@ -154,8 +164,9 @@ export default function SettingsScreen() {
       const next: Settings = { ...current, ...partial };
       patch(partial);
       await saveSettings(db, next);
+      restoreScroll();
     },
-    [db, patch],
+    [db, patch, restoreScroll],
   );
 
   const onExport = useCallback(async () => {
@@ -163,7 +174,6 @@ export default function SettingsScreen() {
     try {
       await exportAndShareBackup(db);
       setHasLastExport(true);
-      Alert.alert(ss.exportDone);
     } catch (err) {
       if (String(err).includes("sharing_unavailable")) {
         Alert.alert(ss.sharingUnavailable);
@@ -227,12 +237,11 @@ export default function SettingsScreen() {
     setBusy(true);
     try {
       await exportVehiclePdfReport(db, vehicleId);
-      Alert.alert(ss.pdfDone);
     } catch (err) {
       if (String(err).includes("sharing_unavailable")) {
         Alert.alert(ss.sharingUnavailable);
       } else {
-        Alert.alert(ss.importError, importErrorMessage(err));
+        Alert.alert(ss.pdfShareError, importErrorMessage(err));
       }
     } finally {
       setBusy(false);
@@ -241,9 +250,13 @@ export default function SettingsScreen() {
 
   const saveCurrency = useCallback(async () => {
     const code = currencyDraft.trim().toUpperCase().slice(0, 8);
-    if (!code) return;
+    if (!code || code === currency) return;
     await persist({ currency: code });
-  }, [currencyDraft, persist]);
+  }, [currency, currencyDraft, persist]);
+
+  useEffect(() => {
+    setCurrencyDraft(currency);
+  }, [currency]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -254,7 +267,16 @@ export default function SettingsScreen() {
         <Text style={styles.toolbarTitle}>{ss.title}</Text>
         <View style={styles.toolbarSpacer} />
       </View>
-      <ScreenScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScreenScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="none"
+        scrollEventThrottle={16}
+        onScroll={(event) => {
+          scrollYRef.current = event.nativeEvent.contentOffset.y;
+        }}
+      >
         <Text style={styles.sectionTitle}>{ss.sectionAppearance}</Text>
         <Text style={styles.fieldLabel}>{ss.theme}</Text>
         <View style={styles.optionGroup}>
@@ -336,8 +358,8 @@ export default function SettingsScreen() {
           value={currencyDraft}
           onChangeText={setCurrencyDraft}
           autoCapitalize="characters"
-          onBlur={saveCurrency}
           onSubmitEditing={saveCurrency}
+          returnKeyType="done"
         />
 
         <Text style={[styles.sectionTitle, styles.sectionGap]}>

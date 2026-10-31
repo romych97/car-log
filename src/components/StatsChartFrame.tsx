@@ -25,16 +25,21 @@ function computeChartLayout(height: number): StatsChartLayout {
 
 type StatsChartFrameProps = {
   height: number;
+  clip?: boolean;
   children: (layout: StatsChartLayout) => ReactNode;
 };
 
 /** Fixed-size chart slot — no onLayout (avoids scroll jump / vertical stretch). */
-export function StatsChartFrame({ height, children }: StatsChartFrameProps) {
+export function StatsChartFrame({
+  height,
+  clip = true,
+  children,
+}: StatsChartFrameProps) {
   const layout = useMemo(() => computeChartLayout(height), [height]);
 
   return (
     <View
-      style={[styles.frame, { height }]}
+      style={[styles.frame, { height, overflow: clip ? "hidden" : "visible" }]}
       pointerEvents="none"
       collapsable={false}
     >

@@ -12,6 +12,7 @@ import { getVehicleById, getCurrentOdometer } from "@/db/repositories/vehicles";
 import { computeConsumptionIntervals } from "@/domain/fuel/calculations";
 import { buildMonthlySpendSeries, expensesByCategory } from "@/domain/stats/charts";
 import { computePeriodSummary } from "@/domain/vehicle/summary";
+import { copyToShareCache, writeBase64ToShareCache } from "@/share/prepareShareUri";
 import {
   formatDistanceValue,
   formatVolumeValue,
@@ -25,6 +26,12 @@ function escapeHtml(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function pdfFileName(vehicleName: string): string {
+  const safe = vehicleName.replace(/[^\w\u0400-\u04FF-]+/gi, "_").slice(0, 40);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  return `carlog-report-${safe || "vehicle"}-${stamp}.pdf`;
 }
 
 export async function exportVehiclePdfReport(
@@ -122,10 +129,11 @@ export async function exportVehiclePdfReport(
 </body>
 </html>`;
 
-  const { uri } = await Print.printToFileAsync({ html });
+  const fileName = pdfFileName(vehicle.name);
+  const printResult = await Print.printToFileAsync({ html, base64: true });
 
   if (Platform.OS === "web") {
-    window.open(uri, "_blank");
+    window.open(printResult.uri, "_blank");
     return;
   }
 
@@ -133,8 +141,15 @@ export async function exportVehiclePdfReport(
   if (!canShare) {
     throw new Error("sharing_unavailable");
   }
-  await Sharing.shareAsync(uri, {
+
+  const shareUri = printResult.base64
+    ? await writeBase64ToShareCache(printResult.base64, fileName)
+    : await copyToShareCache(printResult.uri, fileName);
+  const dialogTitle = `${vehicle.name} — CarLog`;
+
+  await Sharing.shareAsync(shareUri, {
     mimeType: "application/pdf",
-    dialogTitle: `${vehicle.name} — CarLog`,
+    dialogTitle,
+    UTI: "com.adobe.pdf",
   });
 }
