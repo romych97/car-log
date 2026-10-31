@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   visible: boolean;
@@ -18,7 +18,6 @@ export function UndoSnackbar({
   onDismiss,
   durationMs = 5000,
 }: Props) {
-  const translateY = useRef(new Animated.Value(80)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -27,35 +26,19 @@ export function UndoSnackbar({
       timerRef.current = null;
     }
 
-    if (!visible) {
-      Animated.timing(translateY, {
-        toValue: 80,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-      return;
-    }
-
-    Animated.timing(translateY, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    if (!visible) return;
 
     timerRef.current = setTimeout(onDismiss, durationMs);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [visible, durationMs, onDismiss, translateY]);
+  }, [visible, durationMs, onDismiss]);
 
   if (!visible) return null;
 
   return (
-    <Animated.View
-      style={[styles.bar, { transform: [{ translateY }] }]}
-      accessibilityRole="alert"
-    >
+    <View style={styles.bar} accessibilityRole="alert">
       <Text style={styles.message} numberOfLines={2}>
         {message}
       </Text>
@@ -68,7 +51,7 @@ export function UndoSnackbar({
       >
         <Text style={styles.action}>{actionLabel}</Text>
       </Pressable>
-    </Animated.View>
+    </View>
   );
 }
 
