@@ -3,6 +3,8 @@ import type {
   DistanceUnit,
   FuelLog,
   FuelType,
+  Expense,
+  ExpenseCategory,
   Settings,
   Vehicle,
   VolumeUnit,
@@ -52,6 +54,30 @@ export function rowToFuelLog(row: FuelLogRow): FuelLog {
     pricePerUnit: row.price_per_unit,
     totalCost: row.total_cost,
     fullTank: row.full_tank !== 0,
+    note: row.note ?? undefined,
+  };
+}
+
+export type ExpenseRow = {
+  id: string;
+  vehicle_id: string;
+  date: number;
+  odometer: number | null;
+  category: string;
+  title: string;
+  amount: number;
+  note: string | null;
+};
+
+export function rowToExpense(row: ExpenseRow): Expense {
+  return {
+    id: row.id,
+    vehicleId: row.vehicle_id,
+    date: row.date,
+    odometer: row.odometer ?? undefined,
+    category: row.category as ExpenseCategory,
+    title: row.title,
+    amount: row.amount,
     note: row.note ?? undefined,
   };
 }

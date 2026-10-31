@@ -10,12 +10,16 @@ import {
 import { useSQLiteContext } from "expo-sqlite";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ActionSheetModal } from "@/components/ActionSheetModal";
 import { VehiclePickerModal } from "@/components/VehiclePickerModal";
 import { setSelectedVehicleId } from "@/db/repositories/settings";
+import { computePeriodSummary } from "@/domain/vehicle/summary";
 import { useFuelLogs, useFuelSummary } from "@/hooks/useFuelLogs";
+import { useJournal } from "@/hooks/useJournal";
 import { useVehicleOdometer, useVehicles } from "@/hooks/useVehicles";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
+import { formatMoneyMinor } from "@/utils/money";
 
 export default function HomeScreen() {
   const db = useSQLiteContext();
@@ -24,6 +28,7 @@ export default function HomeScreen() {
   const isPremium = useSettingsStore((s) => s.isPremium);
   const setSelected = useSettingsStore((s) => s.setSelectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
+  const locale = language === "ru" ? "ru-RU" : "en-US";
 
   const { vehicles, refresh } = useVehicles();
   const selectedVehicle =
@@ -31,15 +36,25 @@ export default function HomeScreen() {
   const { odometer, refresh: refreshOdometer } =
     useVehicleOdometer(selectedVehicle);
   const { logs, refresh: refreshFuel } = useFuelLogs(db, selectedVehicleId);
+  const { expenses, refresh: refreshJournal } = useJournal(
+    db,
+    selectedVehicleId,
+  );
   const { avgConsumption } = useFuelSummary(logs);
+  const summary = useMemo(
+    () => computePeriodSummary(logs, expenses),
+    [logs, expenses],
+  );
 
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       refresh();
       refreshFuel();
-    }, [refresh, refreshFuel]),
+      refreshJournal();
+    }, [refresh, refreshFuel, refreshJournal]),
   );
 
   useFocusEffect(
@@ -109,25 +124,46 @@ export default function HomeScreen() {
             )}
           </Pressable>
 
+          <View style={styles.statsRow}>
+            <View style={[styles.card, styles.statCard]}>
+              <Text style={styles.statLabel}>{strings.home.avgConsumption}</Text>
+              {avgConsumption != null ? (
+                <Text style={styles.statValue}>
+                  {avgConsumption.toFixed(1)} {strings.common.l100km}
+                </Text>
+              ) : (
+                <Text style={styles.statPlaceholder}>
+                  {strings.home.noConsumptionYet}
+                </Text>
+              )}
+            </View>
+            <View style={[styles.card, styles.statCard]}>
+              <Text style={styles.statLabel}>{strings.home.costPerKm}</Text>
+              {summary.costPerKmMinor != null ? (
+                <Text style={styles.statValue}>
+                  {formatMoneyMinor(summary.costPerKmMinor, locale)}
+                </Text>
+              ) : (
+                <Text style={styles.statPlaceholder}>
+                  {strings.home.noCostData}
+                </Text>
+              )}
+              <Text style={styles.statHint}>{strings.home.costPerKmHint}</Text>
+            </View>
+          </View>
+
           <View style={styles.card}>
-            <Text style={styles.statLabel}>{strings.home.avgConsumption}</Text>
-            {avgConsumption != null ? (
-              <Text style={styles.statValue}>
-                {avgConsumption.toFixed(1)} {strings.common.l100km}
-              </Text>
-            ) : (
-              <Text style={styles.statPlaceholder}>
-                {strings.home.noConsumptionYet}
-              </Text>
-            )}
-            <Text style={styles.statHint}>{strings.home.avgConsumptionHint}</Text>
+            <Text style={styles.statLabel}>{strings.home.monthSpend}</Text>
+            <Text style={styles.statValue}>
+              {formatMoneyMinor(summary.monthCostMinor, locale)}
+            </Text>
           </View>
 
           <Pressable
             style={styles.primaryButton}
-            onPress={() => router.push("/fuel/new")}
+            onPress={() => setAddOpen(true)}
           >
-            <Text style={styles.primaryButtonText}>{strings.home.addFuel}</Text>
+            <Text style={styles.primaryButtonText}>{strings.home.addEntry}</Text>
           </Pressable>
 
           {(isPremium || vehicles.length < 2) && (
@@ -148,6 +184,24 @@ export default function HomeScreen() {
         vehicles={vehicles}
         onClose={() => setPickerOpen(false)}
         onSelect={(v) => onSelectVehicle(v.id)}
+      />
+
+      <ActionSheetModal
+        visible={addOpen}
+        title={strings.journal.addTitle}
+        onClose={() => setAddOpen(false)}
+        options={[
+          {
+            key: "fuel",
+            label: strings.home.addFuel,
+            onPress: () => router.push("/fuel/new"),
+          },
+          {
+            key: "expense",
+            label: strings.home.addExpense,
+            onPress: () => router.push("/expense/new"),
+          },
+        ]}
       />
     </SafeAreaView>
   );
@@ -227,25 +281,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#208AEF",
   },
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+  },
   statLabel: {
     fontSize: 14,
     color: "#666",
   },
   statValue: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "700",
     marginTop: 4,
   },
   statPlaceholder: {
-    fontSize: 15,
+    fontSize: 13,
     color: "#666",
     marginTop: 4,
-    lineHeight: 21,
+    lineHeight: 18,
   },
   statHint: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#888",
-    marginTop: 8,
+    marginTop: 6,
   },
   primaryButton: {
     backgroundColor: "#208AEF",
