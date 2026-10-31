@@ -1,15 +1,14 @@
 import { useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
-import { Text, View, type ScrollViewInstance } from "react-native";
-import { BarChart, LineChart } from "react-native-gifted-charts";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import {
-  STATS_CHART_Y_AXIS_WIDTH,
-  StatsChartFrame,
-} from "@/components/StatsChartFrame";
+  ConsumptionLineSvgChart,
+  MonthlySpendSvgChart,
+} from "@/components/stats/StatsSvgCharts";
 import { listExpensesByVehicle } from "@/db/repositories/expenses";
 import { listFuelLogsByVehicle } from "@/db/repositories/fuelLogs";
 import { computeConsumptionIntervals } from "@/domain/fuel/calculations";
@@ -24,12 +23,12 @@ import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
 import { createStatsScreenStyles } from "@/theme/screenStyles";
-import type { AppColors } from "@/theme/colors";
 import type { Expense, ExpenseCategory, FuelLog } from "@/types/models";
 import { formatMoneyMinor } from "@/utils/money";
 
 const MONTHLY_PLOT_HEIGHT = 208;
-const MONTHLY_BLOCK_MIN_HEIGHT = MONTHLY_PLOT_HEIGHT + 36;
+/** Plot + month labels + legend */
+const MONTHLY_BLOCK_MIN_HEIGHT = MONTHLY_PLOT_HEIGHT + 44;
 const CONSUMPTION_CHART_HEIGHT = 200;
 
 const CATEGORY_COLORS = [
@@ -41,40 +40,12 @@ const CATEGORY_COLORS = [
   "#00ACC1",
 ];
 
-function formatChartMoneyAxis(value: string): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return value;
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000) {
-    const m = abs / 1_000_000;
-    return `${n < 0 ? "-" : ""}${m >= 10 ? Math.round(m) : m.toFixed(1).replace(/\.0$/, "")}M`;
-  }
-  if (abs >= 1000) {
-    return `${n < 0 ? "-" : ""}${Math.round(abs / 1000)}k`;
-  }
-  return String(Math.round(n));
-}
-
-function chartCommonProps(
-  containerWidth: number,
-  yAxisWidth: number,
-  axisTextStyle: { fontSize: number; color: string },
-  colors: AppColors,
-) {
-  return {
-    parentWidth: containerWidth,
-    yAxisLabelWidth: yAxisWidth,
-    formatYLabel: formatChartMoneyAxis,
-    yAxisTextStyle: axisTextStyle,
-    xAxisLabelTextStyle: axisTextStyle,
-    rulesType: "solid" as const,
-    rulesColor: colors.border,
-    rulesThickness: 1,
-    xAxisColor: colors.border,
-    yAxisColor: colors.border,
-    xAxisThickness: 1,
-    yAxisThickness: 1,
-  };
+function statsDataFingerprint(fuel: FuelLog[], expenses: Expense[]): string {
+  const fuelPart = fuel.map((l) => `${l.id}:${l.date}:${l.totalCost}`).join("|");
+  const expensePart = expenses
+    .map((e) => `${e.id}:${e.date}:${e.amount}`)
+    .join("|");
+  return `${fuel.length}#${fuelPart};;${expenses.length}#${expensePart}`;
 }
 
 type CategorySpendBarsProps = {
@@ -124,154 +95,6 @@ function CategorySpendBars({
   );
 }
 
-type MonthlyBarChartProps = {
-  barData: { value: number; label: string; frontColor: string }[];
-  colors: AppColors;
-  axisTextStyle: { fontSize: number; color: string };
-  monthLabelStyle: { fontSize: number; color: string; marginTop: number };
-};
-
-function MonthlyMonthLabels({
-  labels,
-  labelStyle,
-}: {
-  labels: string[];
-  labelStyle: { fontSize: number; color: string; marginTop: number };
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        marginLeft: STATS_CHART_Y_AXIS_WIDTH,
-        marginTop: labelStyle.marginTop,
-        paddingHorizontal: 6,
-      }}
-    >
-      {labels.map((label, index) => (
-        <Text
-          key={`${label}-${index}`}
-          style={{
-            flex: 1,
-            textAlign: "center",
-            fontSize: labelStyle.fontSize,
-            color: labelStyle.color,
-          }}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-      ))}
-    </View>
-  );
-}
-
-const MonthlyBarChart = memo(function MonthlyBarChart({
-  barData,
-  colors,
-  axisTextStyle,
-  monthLabelStyle,
-}: MonthlyBarChartProps) {
-  const maxValue = Math.max(...barData.map((d) => d.value), 1) * 1.2;
-  const chartData = useMemo(
-    () => barData.map((d) => ({ ...d, label: "" })),
-    [barData],
-  );
-  const monthLabels = useMemo(
-    () => barData.map((d) => d.label),
-    [barData],
-  );
-
-  return (
-    <>
-      <StatsChartFrame height={MONTHLY_PLOT_HEIGHT}>
-        {({ plotWidth, containerWidth, height, yAxisWidth }) => {
-          const n = Math.max(chartData.length, 1);
-          const spacing = 8;
-          const side = 6;
-          const barWidth = Math.max(
-            8,
-            Math.floor((plotWidth - side * 2 - spacing * (n - 1)) / n),
-          );
-          const labelWidth = barWidth + spacing;
-
-          return (
-            <BarChart
-              {...chartCommonProps(
-                containerWidth,
-                yAxisWidth,
-                axisTextStyle,
-                colors,
-              )}
-              data={chartData}
-              width={plotWidth}
-              height={height}
-              barWidth={barWidth}
-              spacing={spacing}
-              labelWidth={labelWidth}
-              initialSpacing={side}
-              endSpacing={side}
-              adjustToWidth
-              roundedTop={false}
-              roundedBottom={false}
-              barBorderRadius={0}
-              xAxisLabelsHeight={0}
-              labelsExtraHeight={0}
-              noOfSections={4}
-              maxValue={maxValue}
-              disableScroll
-              isAnimated={false}
-              backgroundColor={colors.chartBackground}
-            />
-          );
-        }}
-      </StatsChartFrame>
-      <MonthlyMonthLabels labels={monthLabels} labelStyle={monthLabelStyle} />
-    </>
-  );
-});
-
-type ConsumptionLineChartProps = {
-  lineData: { value: number; label: string }[];
-  colors: AppColors;
-  axisTextStyle: { fontSize: number; color: string };
-};
-
-const ConsumptionLineChart = memo(function ConsumptionLineChart({
-  lineData,
-  colors,
-  axisTextStyle,
-}: ConsumptionLineChartProps) {
-  const maxValue = Math.max(...lineData.map((d) => d.value), 1) * 1.15;
-
-  return (
-    <StatsChartFrame height={CONSUMPTION_CHART_HEIGHT}>
-      {({ plotWidth, containerWidth, height, yAxisWidth }) => (
-        <LineChart
-          {...chartCommonProps(
-            containerWidth,
-            yAxisWidth,
-            axisTextStyle,
-            colors,
-          )}
-          data={lineData}
-          width={plotWidth}
-          height={height}
-          spacing={40}
-          initialSpacing={8}
-          endSpacing={8}
-          color={colors.tint}
-          thickness={2}
-          noOfSections={4}
-          maxValue={maxValue}
-          disableScroll
-          isAnimated={false}
-          backgroundColor={colors.chartBackground}
-        />
-      )}
-    </StatsChartFrame>
-  );
-});
-
 export default function StatsScreen() {
   const db = useSQLiteContext();
   const language = useSettingsStore((s) => s.language);
@@ -301,30 +124,26 @@ export default function StatsScreen() {
 
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const scrollRef = useRef<ScrollViewInstance>(null);
-  const scrollYRef = useRef(0);
+  const dataFingerprintRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!vehicleId) {
+      dataFingerprintRef.current = null;
       setFuelLogs([]);
       setExpenses([]);
       return;
     }
-    const savedY = scrollYRef.current;
     const [fuel, ex] = await Promise.all([
       listFuelLogsByVehicle(db, vehicleId),
       listExpensesByVehicle(db, vehicleId),
     ]);
+    const fingerprint = `${vehicleId}:${statsDataFingerprint(fuel, ex)}`;
+    if (fingerprint === dataFingerprintRef.current) {
+      return;
+    }
+    dataFingerprintRef.current = fingerprint;
     setFuelLogs(fuel);
     setExpenses(ex);
-    if (savedY > 0) {
-      scrollYRef.current = savedY;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollRef.current?.scrollTo({ y: savedY, animated: false });
-        });
-      });
-    }
   }, [db, vehicleId]);
 
   useFocusEffect(
@@ -356,7 +175,7 @@ export default function StatsScreen() {
       monthly.map((m) => ({
         value: Math.round(m.totalMinor / 100),
         label: m.label,
-        frontColor: colors.tint,
+        color: colors.tint,
       })),
     [monthly, colors.tint],
   );
@@ -393,15 +212,7 @@ export default function StatsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{st.title}</Text>
       </View>
-      <ScreenScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        scrollEventThrottle={16}
-        onScroll={(event) => {
-          scrollYRef.current = event.nativeEvent.contentOffset.y;
-        }}
-      >
+      <ScreenScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{st.monthlySpend}</Text>
           <Text style={styles.hint}>{st.monthlyHint}</Text>
@@ -411,17 +222,15 @@ export default function StatsScreen() {
                 styles.monthlyChartBlock,
                 { minHeight: MONTHLY_BLOCK_MIN_HEIGHT },
               ]}
-              collapsable={false}
             >
-              <MonthlyBarChart
+              <MonthlySpendSvgChart
+                height={MONTHLY_PLOT_HEIGHT}
                 barData={barData}
                 colors={colors}
-                axisTextStyle={axisTextStyle}
+                axisStyle={axisTextStyle}
                 monthLabelStyle={monthLabelStyle}
+                legend={`${st.chartFuel} + ${st.chartOther} · ${currencyCode}`}
               />
-              <Text style={styles.legend}>
-                {st.chartFuel} + {st.chartOther} · {currencyCode}
-              </Text>
             </View>
           ) : (
             <Text style={styles.placeholder}>{st.noData}</Text>
@@ -447,11 +256,12 @@ export default function StatsScreen() {
           <Text style={styles.cardTitle}>{st.consumption}</Text>
           <Text style={styles.hint}>{consumptionHintText}</Text>
           {lineData.length >= 2 ? (
-            <View style={styles.chartSlot} collapsable={false}>
-              <ConsumptionLineChart
+            <View style={styles.chartSlot}>
+              <ConsumptionLineSvgChart
+                height={CONSUMPTION_CHART_HEIGHT}
                 lineData={lineData}
                 colors={colors}
-                axisTextStyle={axisTextStyle}
+                axisStyle={axisTextStyle}
               />
             </View>
           ) : (

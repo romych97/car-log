@@ -1,3 +1,4 @@
+import { AppTextInput } from "@/components/AppTextInput";
 import { useMemo, useState } from "react";
 import {
   Alert,
@@ -7,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -153,7 +153,7 @@ export function ReminderCompleteForm({
           <Text style={styles.label}>
             {uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm}
           </Text>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={odometerText}
             onChangeText={setOdometerText}
@@ -163,7 +163,7 @@ export function ReminderCompleteForm({
 
         <View style={styles.field}>
           <Text style={styles.label}>{strings.expense.amount}</Text>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={amountText}
             onChangeText={setAmountText}
@@ -174,7 +174,7 @@ export function ReminderCompleteForm({
 
         <View style={styles.field}>
           <Text style={styles.label}>{strings.expense.note}</Text>
-          <TextInput
+          <AppTextInput
             style={[styles.input, styles.note]}
             value={note}
             onChangeText={setNote}

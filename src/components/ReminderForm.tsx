@@ -1,3 +1,4 @@
+import { AppTextInput } from "@/components/AppTextInput";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   Alert,
@@ -7,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -223,7 +223,7 @@ export function ReminderForm({
         <Text style={styles.disclaimer}>{rs.templateDisclaimer}</Text>
 
         <Field label={rs.fieldTitle}>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={title}
             onChangeText={setTitle}
@@ -238,7 +238,7 @@ export function ReminderForm({
               : rs.everyKm
           }
         >
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={everyKmText}
             onChangeText={setEveryKmText}
@@ -248,7 +248,7 @@ export function ReminderForm({
         </Field>
 
         <Field label={rs.everyMonths}>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={everyMonthsText}
             onChangeText={setEveryMonthsText}
@@ -281,7 +281,7 @@ export function ReminderForm({
             uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
           }
         >
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={lastOdometerText}
             onChangeText={setLastOdometerText}

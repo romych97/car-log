@@ -1,3 +1,4 @@
+import { AppTextInput } from "@/components/AppTextInput";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   Alert,
@@ -7,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -228,10 +228,10 @@ export function ExpenseForm({
         </View>
 
         <Field label={es.title}>
-          <TextInput style={styles.input} value={title} onChangeText={setTitle} />
+          <AppTextInput style={styles.input} value={title} onChangeText={setTitle} />
         </Field>
         <Field label={es.amount}>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={amountText}
             onChangeText={setAmountText}
@@ -268,7 +268,7 @@ export function ExpenseForm({
               uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
             }
           >
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={odometerText}
               onChangeText={setOdometerText}
@@ -278,7 +278,7 @@ export function ExpenseForm({
         )}
 
         <Field label={es.note}>
-          <TextInput
+          <AppTextInput
             style={[styles.input, styles.noteInput]}
             value={note}
             onChangeText={setNote}

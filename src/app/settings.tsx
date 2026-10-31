@@ -5,12 +5,12 @@ import {
   Alert,
   Pressable,
   Text,
-  TextInput,
   View,
   type ScrollViewInstance,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppTextInput } from "@/components/AppTextInput";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 
 import {
@@ -353,7 +353,7 @@ export default function SettingsScreen() {
 
         <Text style={styles.fieldLabel}>{ss.currency}</Text>
         <Text style={styles.hint}>{ss.currencyHint}</Text>
-        <TextInput
+        <AppTextInput
           style={styles.input}
           value={currencyDraft}
           onChangeText={setCurrencyDraft}

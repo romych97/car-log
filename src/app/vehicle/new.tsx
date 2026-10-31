@@ -1,3 +1,4 @@
+import { AppTextInput } from "@/components/AppTextInput";
 import { router, Stack } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useMemo, useState, type ReactNode } from "react";
@@ -9,7 +10,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -122,7 +122,7 @@ export default function NewVehicleScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Field label={vs.name}>
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
@@ -131,13 +131,13 @@ export default function NewVehicleScreen() {
             />
           </Field>
           <Field label={vs.make}>
-            <TextInput style={styles.input} value={make} onChangeText={setMake} />
+            <AppTextInput style={styles.input} value={make} onChangeText={setMake} />
           </Field>
           <Field label={vs.model}>
-            <TextInput style={styles.input} value={model} onChangeText={setModel} />
+            <AppTextInput style={styles.input} value={model} onChangeText={setModel} />
           </Field>
           <Field label={vs.year}>
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={year}
               onChangeText={setYear}
@@ -166,7 +166,7 @@ export default function NewVehicleScreen() {
           <Field
             label={uf.volumeUnit === "gal" ? u.tankGal : u.tankL}
           >
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={tankCapacity}
               onChangeText={setTankCapacity}
@@ -178,7 +178,7 @@ export default function NewVehicleScreen() {
               uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
             }
           >
-            <TextInput
+            <AppTextInput
               style={styles.input}
               value={initialOdometer}
               onChangeText={setInitialOdometer}

@@ -1,3 +1,4 @@
+import { AppTextInput } from "@/components/AppTextInput";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   Alert,
@@ -8,7 +9,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -266,7 +266,7 @@ export function FuelLogForm({
             uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
           }
         >
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={odometerText}
             onChangeText={setOdometerText}
@@ -274,7 +274,7 @@ export function FuelLogForm({
           />
         </Field>
         <Field label={uf.volumeUnit === "gal" ? u.volumeGal : u.volumeL}>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={volumeText}
             onChangeText={onVolumeChange}
@@ -286,7 +286,7 @@ export function FuelLogForm({
             uf.volumeUnit === "gal" ? u.pricePerGal : u.pricePerLiter
           }
         >
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={priceText}
             onChangeText={onPriceChange}
@@ -294,7 +294,7 @@ export function FuelLogForm({
           />
         </Field>
         <Field label={fs.total}>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={totalText}
             onChangeText={onTotalChange}
@@ -308,7 +308,7 @@ export function FuelLogForm({
         </View>
 
         <Field label={fs.note}>
-          <TextInput
+          <AppTextInput
             style={[styles.input, styles.noteInput]}
             value={note}
             onChangeText={setNote}
