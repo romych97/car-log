@@ -20,6 +20,7 @@ import {
 } from "@/db/repositories/vehicles";
 import { setSelectedVehicleId } from "@/db/repositories/settings";
 import { t } from "@/i18n/translations";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { FuelType } from "@/types/models";
 import { createId } from "@/utils/id";
@@ -40,6 +41,8 @@ export default function NewVehicleScreen() {
   const setSelected = useSettingsStore((s) => s.setSelectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
   const vs = strings.vehicle;
+  const uf = useUnitFormat();
+  const u = strings.units;
 
   const [name, setName] = useState("");
   const [make, setMake] = useState("");
@@ -59,8 +62,8 @@ export default function NewVehicleScreen() {
       Alert.alert(vs.odometerRequired);
       return;
     }
-    const odometer = Number(initialOdometer.replace(",", "."));
-    if (!Number.isFinite(odometer) || odometer < 0) {
+    const odometer = uf.parseDistanceInput(initialOdometer);
+    if (odometer == null || odometer < 0) {
       Alert.alert(vs.odometerInvalid);
       return;
     }
@@ -72,7 +75,7 @@ export default function NewVehicleScreen() {
     }
 
     const yearNum = parseOptionalNumber(year);
-    const tank = parseOptionalNumber(tankCapacity);
+    const tank = uf.parseTankCapacityInput(tankCapacity);
 
     setSaving(true);
     try {
@@ -160,7 +163,9 @@ export default function NewVehicleScreen() {
               </Pressable>
             ))}
           </View>
-          <Field label={vs.tankCapacity}>
+          <Field
+            label={uf.volumeUnit === "gal" ? u.tankGal : u.tankL}
+          >
             <TextInput
               style={styles.input}
               value={tankCapacity}
@@ -168,7 +173,11 @@ export default function NewVehicleScreen() {
               keyboardType="decimal-pad"
             />
           </Field>
-          <Field label={vs.initialOdometer}>
+          <Field
+            label={
+              uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
+            }
+          >
             <TextInput
               style={styles.input}
               value={initialOdometer}

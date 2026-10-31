@@ -7,11 +7,11 @@ import type { AppLanguage } from "@/types/models";
 export function formatReminderDueLine(
   evaluation: ReminderEvaluation,
   language: AppLanguage,
-  kmLabel: string,
+  formatKmRemaining: (km: number) => string,
 ): string {
   const parts: string[] = [];
   if (evaluation.kmRemaining != null) {
-    parts.push(`~${Math.round(evaluation.kmRemaining).toLocaleString()} ${kmLabel}`);
+    parts.push(`~${formatKmRemaining(evaluation.kmRemaining)}`);
   }
   if (evaluation.daysRemaining != null) {
     const locale = language === "ru" ? ru : enUS;

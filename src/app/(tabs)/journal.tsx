@@ -17,6 +17,7 @@ import { UndoSnackbar } from "@/components/UndoSnackbar";
 import { deleteExpense, insertExpense } from "@/db/repositories/expenses";
 import { deleteFuelLog, insertFuelLog } from "@/db/repositories/fuelLogs";
 import { useJournal } from "@/hooks/useJournal";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { JournalEntry } from "@/types/journal";
@@ -32,6 +33,7 @@ export default function JournalScreen() {
   const language = useSettingsStore((s) => s.language);
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
+  const uf = useUnitFormat();
   const js = strings.journal;
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
@@ -167,9 +169,8 @@ export default function JournalScreen() {
                   </View>
                   {item.kind === "fuel" ? (
                     <Text style={styles.rowMeta}>
-                      {Math.round(item.data.odometer).toLocaleString()}{" "}
-                      {strings.common.km} · {item.data.volume.toLocaleString(locale)}{" "}
-                      л
+                      {uf.formatDistance(item.data.odometer)} ·{" "}
+                      {uf.formatVolume(item.data.volume)}
                       {item.data.fullTank ? ` · ${strings.fuel.fullTankBadge}` : ""}
                     </Text>
                   ) : (

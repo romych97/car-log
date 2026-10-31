@@ -22,9 +22,10 @@ import {
 import { getCurrentOdometer } from "@/db/repositories/vehicles";
 import { MAX_ODOMETER_JUMP_KM } from "@/domain/fuel/calculations";
 import { t } from "@/i18n/translations";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import type { Expense, ExpenseCategory, Vehicle } from "@/types/models";
 import { createId } from "@/utils/id";
-import { formatMoneyMinor, parseDecimal, parseMoneyToMinor } from "@/utils/money";
+import { formatMoneyMinor, parseMoneyToMinor } from "@/utils/money";
 
 const CATEGORIES: ExpenseCategory[] = [
   "service",
@@ -57,6 +58,8 @@ export function ExpenseForm({
   const db = useSQLiteContext();
   const strings = useMemo(() => t(language), [language]);
   const es = strings.expense;
+  const uf = useUnitFormat();
+  const u = strings.units;
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
   const [date, setDate] = useState(() =>
@@ -72,9 +75,9 @@ export function ExpenseForm({
   );
   const [odometerText, setOdometerText] = useState(() =>
     existing?.odometer != null
-      ? String(existing.odometer)
+      ? uf.formatDistanceInput(existing.odometer)
       : initialOdometer != null
-        ? String(Math.round(initialOdometer))
+        ? uf.formatDistanceInput(initialOdometer)
         : "",
   );
   const [includeOdometer, setIncludeOdometer] = useState(
@@ -102,7 +105,7 @@ export function ExpenseForm({
 
     let odometer: number | undefined;
     if (includeOdometer && odometerText.trim()) {
-      const parsed = parseDecimal(odometerText);
+      const parsed = uf.parseDistanceInput(odometerText);
       if (parsed == null || parsed < 0) {
         Alert.alert(es.odometerInvalid);
         return;
@@ -260,7 +263,11 @@ export function ExpenseForm({
           <Text style={styles.link}>{includeOdometer ? "✓" : "—"}</Text>
         </Pressable>
         {includeOdometer && (
-          <Field label={es.odometer}>
+          <Field
+            label={
+              uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
+            }
+          >
             <TextInput
               style={styles.input}
               value={odometerText}

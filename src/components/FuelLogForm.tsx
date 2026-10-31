@@ -23,14 +23,10 @@ import {
   type FuelFieldKey,
 } from "@/domain/fuel/calculations";
 import { t } from "@/i18n/translations";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import type { FuelLog, Vehicle } from "@/types/models";
 import { createId } from "@/utils/id";
-import {
-  formatMoneyMinor,
-  formatPricePerLiterMinor,
-  parseDecimal,
-  parseMoneyToMinor,
-} from "@/utils/money";
+import { formatMoneyMinor, parseMoneyToMinor } from "@/utils/money";
 
 type Props = {
   vehicle: Vehicle;
@@ -52,6 +48,8 @@ export function FuelLogForm({
   const db = useSQLiteContext();
   const strings = useMemo(() => t(language), [language]);
   const fs = strings.fuel;
+  const uf = useUnitFormat();
+  const u = strings.units;
 
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
@@ -61,17 +59,17 @@ export function FuelLogForm({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [odometerText, setOdometerText] = useState(() =>
     existing
-      ? String(existing.odometer)
+      ? uf.formatDistanceInput(existing.odometer)
       : initialOdometer != null
-        ? String(Math.round(initialOdometer))
+        ? uf.formatDistanceInput(initialOdometer)
         : "",
   );
   const [volumeText, setVolumeText] = useState(() =>
-    existing ? String(existing.volume) : "",
+    existing ? uf.formatVolumeInput(existing.volume) : "",
   );
   const [priceText, setPriceText] = useState(() =>
     existing
-      ? formatPricePerLiterMinor(existing.pricePerUnit, locale)
+      ? uf.formatPricePerVolumeMinor(existing.pricePerUnit)
       : "",
   );
   const [totalText, setTotalText] = useState(() =>
@@ -85,24 +83,24 @@ export function FuelLogForm({
     (field: FuelFieldKey, volume: string, price: string, total: string) => {
       const synced = syncFuelFields(
         {
-          volume: parseDecimal(volume),
-          pricePerUnit: parseMoneyToMinor(price),
+          volume: uf.parseVolumeInput(volume),
+          pricePerUnit: uf.parsePricePerVolumeInput(price),
           totalCost: parseMoneyToMinor(total),
         },
         field,
       );
 
       if (field !== "volume" && synced.volume != null) {
-        setVolumeText(String(Math.round(synced.volume * 100) / 100));
+        setVolumeText(uf.formatVolumeInput(synced.volume));
       }
       if (field !== "pricePerUnit" && synced.pricePerUnit != null) {
-        setPriceText(formatPricePerLiterMinor(synced.pricePerUnit, locale));
+        setPriceText(uf.formatPricePerVolumeMinor(synced.pricePerUnit));
       }
       if (field !== "totalCost" && synced.totalCost != null) {
         setTotalText(formatMoneyMinor(synced.totalCost, locale));
       }
     },
-    [locale],
+    [locale, uf],
   );
 
   const onVolumeChange = (text: string) => {
@@ -121,9 +119,9 @@ export function FuelLogForm({
   };
 
   async function persist() {
-    const odometer = parseDecimal(odometerText);
-    const volume = parseDecimal(volumeText);
-    const pricePerUnit = parseMoneyToMinor(priceText);
+    const odometer = uf.parseDistanceInput(odometerText);
+    const volume = uf.parseVolumeInput(volumeText);
+    const pricePerUnit = uf.parsePricePerVolumeInput(priceText);
     const totalCost = parseMoneyToMinor(totalText);
 
     if (odometer == null || odometer < 0) {
@@ -263,7 +261,11 @@ export function FuelLogForm({
           />
         )}
 
-        <Field label={fs.odometer}>
+        <Field
+          label={
+            uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
+          }
+        >
           <TextInput
             style={styles.input}
             value={odometerText}
@@ -271,7 +273,7 @@ export function FuelLogForm({
             keyboardType="decimal-pad"
           />
         </Field>
-        <Field label={fs.volumeLiters}>
+        <Field label={uf.volumeUnit === "gal" ? u.volumeGal : u.volumeL}>
           <TextInput
             style={styles.input}
             value={volumeText}
@@ -279,7 +281,11 @@ export function FuelLogForm({
             keyboardType="decimal-pad"
           />
         </Field>
-        <Field label={fs.pricePerLiter}>
+        <Field
+          label={
+            uf.volumeUnit === "gal" ? u.pricePerGal : u.pricePerLiter
+          }
+        >
           <TextInput
             style={styles.input}
             value={priceText}

@@ -17,6 +17,7 @@ import { computePeriodSummary } from "@/domain/vehicle/summary";
 import { useFuelLogs, useFuelSummary } from "@/hooks/useFuelLogs";
 import { useJournal } from "@/hooks/useJournal";
 import { useReminders } from "@/hooks/useReminders";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { useVehicleOdometer, useVehicles } from "@/hooks/useVehicles";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -33,6 +34,7 @@ export default function HomeScreen() {
   const isPremium = useSettingsStore((s) => s.isPremium);
   const setSelected = useSettingsStore((s) => s.setSelectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
+  const uf = useUnitFormat();
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
   const { vehicles, refresh } = useVehicles();
@@ -125,9 +127,7 @@ export default function HomeScreen() {
               {strings.home.currentOdometer}
             </Text>
             <Text style={styles.odometerValue}>
-              {odometer != null
-                ? `${Math.round(odometer).toLocaleString()} ${strings.common.km}`
-                : "—"}
+              {odometer != null ? uf.formatDistance(odometer) : "—"}
             </Text>
             {vehicles.length > 1 && (
               <Text style={styles.tapHint}>{strings.home.selectVehicle}</Text>
@@ -139,7 +139,7 @@ export default function HomeScreen() {
               <Text style={styles.statLabel}>{strings.home.avgConsumption}</Text>
               {avgConsumption != null ? (
                 <Text style={styles.statValue}>
-                  {avgConsumption.toFixed(1)} {strings.common.l100km}
+                  {uf.formatConsumption(avgConsumption)}
                 </Text>
               ) : (
                 <Text style={styles.statPlaceholder}>
@@ -200,10 +200,8 @@ export default function HomeScreen() {
                   <View style={styles.reminderText}>
                     <Text style={styles.reminderTitle}>{reminder.title}</Text>
                     <Text style={styles.reminderMeta}>
-                      {formatReminderDueLine(
-                        evaluation,
-                        language,
-                        strings.common.km,
+                      {formatReminderDueLine(evaluation, language, (km) =>
+                        uf.formatDistance(km),
                       )}
                     </Text>
                   </View>

@@ -16,6 +16,7 @@ import {
   type ReminderTemplateId,
 } from "@/domain/reminders/templates";
 import { useReminders } from "@/hooks/useReminders";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
 import {
@@ -28,6 +29,7 @@ export default function MaintenanceScreen() {
   const language = useSettingsStore((s) => s.language);
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
+  const uf = useUnitFormat();
   const rs = strings.reminder;
   const { items, refresh } = useReminders(db, vehicleId);
   const [addOpen, setAddOpen] = useState(false);
@@ -98,10 +100,8 @@ export default function MaintenanceScreen() {
                     </View>
                   </View>
                   <Text style={styles.cardMeta}>
-                    {formatReminderDueLine(
-                      item.evaluation,
-                      language,
-                      strings.common.km,
+                    {formatReminderDueLine(item.evaluation, language, (km) =>
+                      uf.formatDistance(km),
                     )}
                   </Text>
                   <View style={styles.cardActions}>

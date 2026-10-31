@@ -26,6 +26,7 @@ import { getCurrentOdometer } from "@/db/repositories/vehicles";
 import { FREE_REMINDER_LIMIT } from "@/domain/reminders/templates";
 import { computeDailyKmAverage } from "@/domain/reminders/status";
 import { t } from "@/i18n/translations";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import {
   cancelReminderNotifications,
   requestReminderPermissions,
@@ -61,15 +62,17 @@ export function ReminderForm({
   const db = useSQLiteContext();
   const strings = useMemo(() => t(language), [language]);
   const rs = strings.reminder;
+  const uf = useUnitFormat();
+  const u = strings.units;
   const isPremium = useSettingsStore((s) => s.isPremium);
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
   const [title, setTitle] = useState(existing?.title ?? initialTitle ?? "");
   const [everyKmText, setEveryKmText] = useState(() =>
     existing?.everyKm != null
-      ? String(existing.everyKm)
+      ? uf.formatDistanceInput(existing.everyKm)
       : initialEveryKm != null
-        ? String(initialEveryKm)
+        ? uf.formatDistanceInput(initialEveryKm)
         : "",
   );
   const [everyMonthsText, setEveryMonthsText] = useState(() =>
@@ -85,10 +88,10 @@ export function ReminderForm({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [lastOdometerText, setLastOdometerText] = useState(() =>
     existing
-      ? String(Math.round(existing.lastOdometer))
+      ? uf.formatDistanceInput(existing.lastOdometer)
       : initialLastOdometer != null
-        ? String(Math.round(initialLastOdometer))
-        : String(Math.round(vehicle.initialOdometer)),
+        ? uf.formatDistanceInput(initialLastOdometer)
+        : uf.formatDistanceInput(vehicle.initialOdometer),
   );
   const [saving, setSaving] = useState(false);
 
@@ -98,9 +101,10 @@ export function ReminderForm({
       Alert.alert(rs.titleRequired);
       return;
     }
-    const everyKm = everyKmText.trim()
-      ? Number(everyKmText.replace(",", "."))
-      : undefined;
+    const everyKmParsed = everyKmText.trim()
+      ? uf.parseDistanceInput(everyKmText.trim())
+      : null;
+    const everyKm = everyKmParsed ?? undefined;
     const everyMonths = everyMonthsText.trim()
       ? Number(everyMonthsText)
       : undefined;
@@ -116,8 +120,8 @@ export function ReminderForm({
       Alert.alert(rs.intervalInvalid);
       return;
     }
-    const lastOdometer = Number(lastOdometerText.replace(",", "."));
-    if (!Number.isFinite(lastOdometer) || lastOdometer < 0) {
+    const lastOdometer = uf.parseDistanceInput(lastOdometerText);
+    if (lastOdometer == null || lastOdometer < 0) {
       Alert.alert(rs.odometerInvalid);
       return;
     }
@@ -227,7 +231,13 @@ export function ReminderForm({
           />
         </Field>
 
-        <Field label={rs.everyKm}>
+        <Field
+          label={
+            uf.distanceUnit === "mi"
+              ? `${rs.everyKm.split(",")[0]}, ${u.mi}`
+              : rs.everyKm
+          }
+        >
           <TextInput
             style={styles.input}
             value={everyKmText}
@@ -266,7 +276,11 @@ export function ReminderForm({
           )}
         </Field>
 
-        <Field label={rs.lastServiceOdometer}>
+        <Field
+          label={
+            uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
+          }
+        >
           <TextInput
             style={styles.input}
             value={lastOdometerText}

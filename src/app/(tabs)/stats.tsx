@@ -14,6 +14,7 @@ import {
   expensesByCategory,
 } from "@/domain/stats/charts";
 import { t } from "@/i18n/translations";
+import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Expense, ExpenseCategory, FuelLog } from "@/types/models";
 import { formatMoneyMinor } from "@/utils/money";
@@ -26,6 +27,7 @@ export default function StatsScreen() {
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
   const currencyCode = useSettingsStore((s) => s.currency);
   const strings = useMemo(() => t(language), [language]);
+  const uf = useUnitFormat();
   const st = strings.stats;
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
@@ -83,9 +85,14 @@ export default function StatsScreen() {
   }));
 
   const lineData = consumption.map((p) => ({
-    value: p.value,
+    value: uf.chartConsumptionValue(p.value),
     label: p.label,
   }));
+
+  const consumptionHintText =
+    uf.distanceUnit === "mi" && uf.volumeUnit === "gal"
+      ? st.consumptionHintMpg
+      : st.consumptionHint;
 
   if (!vehicleId) {
     return (
@@ -163,7 +170,7 @@ export default function StatsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{st.consumption}</Text>
-          <Text style={styles.hint}>{st.consumptionHint}</Text>
+          <Text style={styles.hint}>{consumptionHintText}</Text>
           {lineData.length >= 2 ? (
             <LineChart
               data={lineData}
