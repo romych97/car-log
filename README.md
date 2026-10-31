@@ -1,56 +1,62 @@
-# Welcome to your Expo app 👋
+# CarLog
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Офлайн‑журнал расходов на автомобиль: заправки, прочие траты, напоминания ТО и простая статистика. Данные хранятся локально в SQLite на устройстве.
 
-## Get started
+**Стек:** Expo SDK 58, Expo Router, TypeScript, `expo-sqlite`, Zustand.
 
-1. Install dependencies
+## Возможности
 
-   ```bash
-   npm install
-   ```
+- Несколько автомобилей (в free — один активный)
+- Заправки с пересчётом суммы и среднего расхода
+- Расходы и общий журнал с фильтрами
+- Напоминания ТО (шаблоны, статусы, локальные уведомления)
+- Главная: пробег, стоимость км, ближайшее ТО
+- Статистика: расходы по месяцам и категориям, расход топлива
+- Настройки: язык (ru/en), валюта, единицы, экспорт/импорт JSON‑бэкапа
 
-2. Start the app
+## Требования
 
-   ```bash
-   npx expo start
-   ```
+- **Node.js** ≥ 22.13 (см. `.nvmrc`)
+- Для Android: эмулятор или устройство; для push‑напоминаний надёжнее **development build**, чем Expo Go
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Запуск
 
 ```bash
-npm run reset-project
+cd carlog
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Дальше в терминале: `a` — Android, `w` — web. При странных ошибках кэша:
 
-### Other setup steps
+```bash
+npx expo start -c
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Проверки
 
-## Learn more
+```bash
+npm test
+npx tsc --noEmit
+npm run lint
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Структура
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Путь | Назначение |
+|------|------------|
+| `src/app/` | Экраны (Expo Router) |
+| `src/db/` | SQLite, миграции, репозитории |
+| `src/domain/` | Расчёты (топливо, ТО, статистика) |
+| `src/components/` | Формы и UI |
+| `src/i18n/` | Переводы ru/en |
 
-## Join the community
+Подробности для разработки — в [AGENTS.md](./AGENTS.md).
 
-Join our community of developers creating universal apps.
+## Сборка (опционально)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Облачные сборки через [EAS Build](https://docs.expo.dev/build/introduction/): `npx eas-cli build` (нужен аккаунт Expo и `eas.json`).
+
+## Лицензия
+
+См. [LICENSE](./LICENSE).
