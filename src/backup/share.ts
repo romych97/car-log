@@ -6,6 +6,11 @@ import { Platform } from "react-native";
 import type { SQLiteDatabase } from "expo-sqlite";
 
 import { buildBackupPayload } from "@/backup/database";
+import {
+  getLastExportUri,
+  loadLastExportUriFromDisk,
+  rememberLastExportUri,
+} from "@/backup/lastExport";
 import { readTextFromUri } from "@/backup/readUri";
 import { normalizeBackupRaw } from "@/backup/text";
 
@@ -14,25 +19,26 @@ function backupFileName(date = new Date()): string {
   return `carlog-backup-${stamp}.json`;
 }
 
-/** Last export in app cache — same session import without document picker. */
-let lastExportCacheUri: string | null = null;
-
 export function getLastExportCacheUri(): string | null {
-  return lastExportCacheUri;
+  return getLastExportUri();
 }
+
+export { loadLastExportUriFromDisk };
 
 export async function exportAndShareBackup(db: SQLiteDatabase): Promise<void> {
   const payload = await buildBackupPayload(db);
   const json = JSON.stringify(payload, null, 2);
+  const docDir = FileSystem.documentDirectory;
   const cacheDir = FileSystem.cacheDirectory;
-  if (!cacheDir) {
+  const baseDir = docDir ?? cacheDir;
+  if (!baseDir) {
     throw new Error("no_cache_dir");
   }
-  const uri = `${cacheDir}${backupFileName()}`;
+  const uri = `${baseDir}${backupFileName()}`;
   await FileSystem.writeAsStringAsync(uri, json, {
     encoding: FileSystem.EncodingType.UTF8,
   });
-  lastExportCacheUri = uri;
+  await rememberLastExportUri(uri);
 
   if (Platform.OS === "web") {
     const blob = new Blob([json], { type: "application/json" });
@@ -80,12 +86,13 @@ export async function readBackupFromPicker(): Promise<string> {
 }
 
 export async function readLastExportBackup(): Promise<string> {
-  if (!lastExportCacheUri) {
+  const uri = getLastExportUri();
+  if (!uri) {
     throw new Error("no_last_export");
   }
-  const info = await FileSystem.getInfoAsync(lastExportCacheUri);
+  const info = await FileSystem.getInfoAsync(uri);
   if (!info.exists) {
     throw new Error("no_last_export");
   }
-  return readTextFromUri(lastExportCacheUri);
+  return readTextFromUri(uri);
 }
