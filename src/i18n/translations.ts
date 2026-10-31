@@ -68,6 +68,9 @@ const ru = {
     listTitle: "Заправки",
     empty: "Заправок пока нет",
     fullTankBadge: "полный бак",
+    delete: "Удалить",
+    deleteConfirmTitle: "Удалить заправку?",
+    deleteConfirmMessage: "Запись будет удалена без возможности восстановления.",
   },
   settings: {
     title: "Настройки",
@@ -149,6 +152,9 @@ const en = {
     listTitle: "Refuels",
     empty: "No refuels yet",
     fullTankBadge: "full tank",
+    delete: "Delete",
+    deleteConfirmTitle: "Delete this refuel?",
+    deleteConfirmMessage: "This entry will be permanently removed.",
   },
   settings: {
     title: "Settings",

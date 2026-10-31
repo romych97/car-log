@@ -15,7 +15,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSQLiteContext } from "expo-sqlite";
 import { startOfDay } from "date-fns";
 
-import { insertFuelLog, updateFuelLog } from "@/db/repositories/fuelLogs";
+import { deleteFuelLog, insertFuelLog, updateFuelLog } from "@/db/repositories/fuelLogs";
 import { getCurrentOdometer } from "@/db/repositories/vehicles";
 import {
   MAX_ODOMETER_JUMP_KM,
@@ -207,6 +207,26 @@ export function FuelLogForm({
     ]);
   }
 
+  function confirmDelete() {
+    if (!existing) return;
+    Alert.alert(fs.deleteConfirmTitle, fs.deleteConfirmMessage, [
+      { text: strings.common.cancel, style: "cancel" },
+      {
+        text: fs.delete,
+        style: "destructive",
+        onPress: async () => {
+          setSaving(true);
+          try {
+            await deleteFuelLog(db, existing.id);
+            onSaved();
+          } finally {
+            setSaving(false);
+          }
+        },
+      },
+    ]);
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -289,6 +309,15 @@ export function FuelLogForm({
             multiline
           />
         </Field>
+        {existing && (
+          <Pressable
+            style={styles.deleteButton}
+            onPress={confirmDelete}
+            disabled={saving}
+          >
+            <Text style={styles.deleteText}>{fs.delete}</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -338,5 +367,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  deleteButton: {
+    marginTop: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  deleteText: {
+    fontSize: 17,
+    color: "#D32F2F",
+    fontWeight: "500",
   },
 });
