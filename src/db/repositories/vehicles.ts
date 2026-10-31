@@ -52,6 +52,43 @@ export async function insertVehicle(
   );
 }
 
+export async function updateVehicle(
+  db: SQLiteDatabase,
+  vehicle: Vehicle,
+): Promise<void> {
+  await db.runAsync(
+    `UPDATE vehicles SET
+      name = ?, make = ?, model = ?, year = ?, fuel_type = ?,
+      tank_capacity = ?, initial_odometer = ?, archived = ?
+    WHERE id = ?`,
+    vehicle.name,
+    vehicle.make ?? null,
+    vehicle.model ?? null,
+    vehicle.year ?? null,
+    vehicle.fuelType,
+    vehicle.tankCapacity ?? null,
+    vehicle.initialOdometer,
+    vehicle.archived ? 1 : 0,
+    vehicle.id,
+  );
+}
+
+export async function archiveVehicle(
+  db: SQLiteDatabase,
+  id: string,
+): Promise<void> {
+  await db.runAsync("UPDATE vehicles SET archived = 1 WHERE id = ?", id);
+}
+
+export async function listAllVehicles(
+  db: SQLiteDatabase,
+): Promise<Vehicle[]> {
+  const rows = await db.getAllAsync<VehicleRow>(
+    "SELECT * FROM vehicles ORDER BY archived ASC, name COLLATE NOCASE",
+  );
+  return rows.map(rowToVehicle);
+}
+
 export async function getCurrentOdometer(
   db: SQLiteDatabase,
   vehicleId: string,

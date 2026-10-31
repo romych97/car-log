@@ -22,6 +22,11 @@ export default function RootLayout() {
               options={{ presentation: "modal", headerShown: false }}
             />
             <Stack.Screen
+              name="vehicle/[id]"
+              options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen name="vehicles/index" options={{ title: "Vehicles" }} />
+            <Stack.Screen
               name="fuel/new"
               options={{ presentation: "modal", headerShown: false }}
             />
