@@ -8,6 +8,7 @@ import type {
   Settings,
   Vehicle,
   VolumeUnit,
+  Reminder,
 } from "@/types/models";
 
 export type VehicleRow = {
@@ -31,6 +32,41 @@ export type SettingsRow = {
   is_premium: number;
   selected_vehicle_id: string | null;
 };
+
+export type ReminderRow = {
+  id: string;
+  vehicle_id: string;
+  title: string;
+  every_km: number | null;
+  every_months: number | null;
+  last_odometer: number;
+  last_date: number;
+  notification_ids: string;
+};
+
+function parseNotificationIds(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((x) => typeof x === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rowToReminder(row: ReminderRow): Reminder {
+  return {
+    id: row.id,
+    vehicleId: row.vehicle_id,
+    title: row.title,
+    everyKm: row.every_km ?? undefined,
+    everyMonths: row.every_months ?? undefined,
+    lastOdometer: row.last_odometer,
+    lastDate: row.last_date,
+    notificationIds: parseNotificationIds(row.notification_ids),
+  };
+}
 
 export type FuelLogRow = {
   id: string;

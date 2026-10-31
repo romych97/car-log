@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import { getSettings, setSelectedVehicleId } from "@/db/repositories/settings";
 import { listActiveVehicles } from "@/db/repositories/vehicles";
+import { syncAllReminderNotifications } from "@/notifications/reminders";
 import { useSettingsStore } from "@/store/settingsStore";
 
 type Props = {
@@ -38,6 +39,14 @@ export function AppBootstrap({ children }: Props) {
         hydrate(merged);
         setSelected(selectedId);
         setReady(true);
+      }
+
+      if (!cancelled) {
+        try {
+          await syncAllReminderNotifications(db, merged.language);
+        } catch (err) {
+          console.warn("[carlog] Reminder notification sync failed:", err);
+        }
       }
     }
 

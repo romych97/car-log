@@ -5,7 +5,10 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
 
 import { AppBootstrap } from "@/components/AppBootstrap";
+import { configureNotificationHandler } from "@/notifications/setup";
 import { migrateDbIfNeeded } from "@/db/migrate";
+
+configureNotificationHandler();
 
 export default function RootLayout() {
   return (
@@ -32,6 +35,18 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="expense/[id]"
+              options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="reminder/new"
+              options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="reminder/[id]"
+              options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="reminder/complete/[id]"
               options={{ presentation: "modal", headerShown: false }}
             />
             <Stack.Screen name="settings" options={{ title: "Settings" }} />

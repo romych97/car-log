@@ -16,9 +16,14 @@ import { setSelectedVehicleId } from "@/db/repositories/settings";
 import { computePeriodSummary } from "@/domain/vehicle/summary";
 import { useFuelLogs, useFuelSummary } from "@/hooks/useFuelLogs";
 import { useJournal } from "@/hooks/useJournal";
+import { useReminders } from "@/hooks/useReminders";
 import { useVehicleOdometer, useVehicles } from "@/hooks/useVehicles";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
+import {
+  formatReminderDueLine,
+  reminderStatusColor,
+} from "@/utils/reminderFormat";
 import { formatMoneyMinor } from "@/utils/money";
 
 export default function HomeScreen() {
@@ -41,6 +46,10 @@ export default function HomeScreen() {
     selectedVehicleId,
   );
   const { avgConsumption } = useFuelSummary(logs);
+  const { topThree, refresh: refreshReminders } = useReminders(
+    db,
+    selectedVehicleId,
+  );
   const summary = useMemo(
     () => computePeriodSummary(logs, expenses),
     [logs, expenses],
@@ -54,7 +63,8 @@ export default function HomeScreen() {
       refresh();
       refreshFuel();
       refreshJournal();
-    }, [refresh, refreshFuel, refreshJournal]),
+      refreshReminders();
+    }, [refresh, refreshFuel, refreshJournal, refreshReminders]),
   );
 
   useFocusEffect(
@@ -157,6 +167,49 @@ export default function HomeScreen() {
             <Text style={styles.statValue}>
               {formatMoneyMinor(summary.monthCostMinor, locale)}
             </Text>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.reminderHeader}>
+              <Text style={styles.statLabel}>
+                {strings.home.upcomingMaintenance}
+              </Text>
+              <Link href="/(tabs)/maintenance" asChild>
+                <Pressable hitSlop={8}>
+                  <Text style={styles.link}>{strings.home.allReminders}</Text>
+                </Pressable>
+              </Link>
+            </View>
+            {topThree.length === 0 ? (
+              <Text style={styles.statPlaceholder}>
+                {strings.home.noReminders}
+              </Text>
+            ) : (
+              topThree.map(({ reminder, evaluation }) => (
+                <Pressable
+                  key={reminder.id}
+                  style={styles.reminderRow}
+                  onPress={() => router.push(`/reminder/${reminder.id}`)}
+                >
+                  <View
+                    style={[
+                      styles.reminderDot,
+                      { backgroundColor: reminderStatusColor(evaluation.status) },
+                    ]}
+                  />
+                  <View style={styles.reminderText}>
+                    <Text style={styles.reminderTitle}>{reminder.title}</Text>
+                    <Text style={styles.reminderMeta}>
+                      {formatReminderDueLine(
+                        evaluation,
+                        language,
+                        strings.common.km,
+                      )}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
           </View>
 
           <Pressable
@@ -308,6 +361,26 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 6,
   },
+  reminderHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  reminderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
+  reminderDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  reminderText: { flex: 1 },
+  reminderTitle: { fontSize: 15, fontWeight: "600" },
+  reminderMeta: { fontSize: 13, color: "#666", marginTop: 2 },
   primaryButton: {
     backgroundColor: "#208AEF",
     borderRadius: 12,
