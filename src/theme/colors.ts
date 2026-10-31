@@ -15,6 +15,8 @@ export type AppColors = {
   chartAxis: string;
   categoryTrack: string;
   cardShadow: string;
+  chipBackground: string;
+  chipText: string;
 };
 
 export const lightColors: AppColors = {
@@ -32,6 +34,8 @@ export const lightColors: AppColors = {
   chartAxis: "#666666",
   categoryTrack: "#EFEFF0",
   cardShadow: "#000000",
+  chipBackground: "#e8e8ed",
+  chipText: "#333333",
 };
 
 export const darkColors: AppColors = {
@@ -49,6 +53,8 @@ export const darkColors: AppColors = {
   chartAxis: "#98989D",
   categoryTrack: "#2C2C2E",
   cardShadow: "#000000",
+  chipBackground: "#2C2C2E",
+  chipText: "#E5E5EA",
 };
 
 export function resolveIsDark(

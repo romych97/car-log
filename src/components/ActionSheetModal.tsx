@@ -1,4 +1,7 @@
+import { useMemo } from "react";
 import { Modal, Pressable, StyleSheet, Text } from "react-native";
+
+import { useAppTheme } from "@/hooks/useAppTheme";
 
 type Option = {
   key: string;
@@ -14,6 +17,51 @@ type Props = {
 };
 
 export function ActionSheetModal({ visible, title, options, onClose }: Props) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        backdrop: {
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.4)",
+          justifyContent: "flex-end",
+        },
+        sheet: {
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          paddingBottom: 24,
+        },
+        title: {
+          fontSize: 16,
+          fontWeight: "600",
+          padding: 16,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+          color: colors.textMuted,
+        },
+        row: {
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+        },
+        rowText: {
+          fontSize: 18,
+          color: colors.tint,
+        },
+        cancel: {
+          alignItems: "center",
+          paddingTop: 12,
+        },
+        cancelText: {
+          fontSize: 28,
+          color: colors.textMuted,
+        },
+      }),
+    [colors],
+  );
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -39,43 +87,3 @@ export function ActionSheetModal({ visible, title, options, onClose }: Props) {
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "600",
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
-    color: "#666",
-  },
-  row: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#eee",
-  },
-  rowText: {
-    fontSize: 18,
-    color: "#208AEF",
-  },
-  cancel: {
-    alignItems: "center",
-    paddingTop: 12,
-  },
-  cancelText: {
-    fontSize: 28,
-    color: "#999",
-  },
-});

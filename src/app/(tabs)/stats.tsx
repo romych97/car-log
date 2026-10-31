@@ -298,7 +298,9 @@ export default function StatsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{st.title}</Text>
       </View>
-      <ScreenScrollView contentContainerStyle={styles.content}>
+      <ScreenScrollView
+        contentContainerStyle={[styles.content, styles.contentGap]}
+      >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{st.monthlySpend}</Text>
           <Text style={styles.hint}>{st.monthlyHint}</Text>

@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -16,8 +15,10 @@ import {
   type ReminderTemplateId,
 } from "@/domain/reminders/templates";
 import { useReminders } from "@/hooks/useReminders";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { t } from "@/i18n/translations";
+import { createMaintenanceScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import {
   formatReminderDueLine,
@@ -28,6 +29,11 @@ export default function MaintenanceScreen() {
   const db = useSQLiteContext();
   const language = useSettingsStore((s) => s.language);
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createMaintenanceScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const uf = useUnitFormat();
   const rs = strings.reminder;
@@ -73,6 +79,7 @@ export default function MaintenanceScreen() {
           <FlatList
             data={items}
             keyExtractor={(item) => item.reminder.id}
+            style={{ flex: 1 }}
             contentContainerStyle={
               items.length === 0 ? styles.listEmpty : styles.list
             }
@@ -157,66 +164,3 @@ export default function MaintenanceScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f5f5f7" },
-  header: { paddingHorizontal: 16, paddingVertical: 12 },
-  title: { fontSize: 22, fontWeight: "700" },
-  list: { padding: 16, gap: 12, paddingBottom: 100 },
-  listEmpty: { flexGrow: 1, padding: 16 },
-  empty: { flex: 1, padding: 24, justifyContent: "center" },
-  emptyText: { fontSize: 16, color: "#444" },
-  emptyBlock: { paddingVertical: 32 },
-  emptyTitle: { fontSize: 18, fontWeight: "600", marginBottom: 8 },
-  emptyBody: { fontSize: 15, color: "#666", lineHeight: 22 },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  cardTitle: { fontSize: 17, fontWeight: "600", flex: 1 },
-  badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  cardMeta: { marginTop: 8, fontSize: 14, color: "#555" },
-  cardActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  doneButton: {
-    backgroundColor: "#208AEF",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  doneButtonText: { color: "#fff", fontWeight: "600" },
-  editLink: { color: "#208AEF", fontSize: 15 },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    backgroundColor: "#f5f5f7",
-  },
-  primary: {
-    backgroundColor: "#208AEF",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryText: { color: "#fff", fontSize: 17, fontWeight: "600" },
-});

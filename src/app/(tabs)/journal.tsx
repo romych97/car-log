@@ -5,7 +5,6 @@ import {
   Alert,
   FlatList,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -17,8 +16,10 @@ import { UndoSnackbar } from "@/components/UndoSnackbar";
 import { deleteExpense, insertExpense } from "@/db/repositories/expenses";
 import { deleteFuelLog, insertFuelLog } from "@/db/repositories/fuelLogs";
 import { useJournal } from "@/hooks/useJournal";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { t } from "@/i18n/translations";
+import { createJournalScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { JournalEntry } from "@/types/journal";
 import type { Expense, FuelLog } from "@/types/models";
@@ -32,6 +33,11 @@ export default function JournalScreen() {
   const db = useSQLiteContext();
   const language = useSettingsStore((s) => s.language);
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createJournalScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const uf = useUnitFormat();
   const js = strings.journal;
@@ -138,6 +144,7 @@ export default function JournalScreen() {
         <FlatList
           data={entries}
           keyExtractor={(item) => item.id}
+          style={{ flex: 1 }}
           contentContainerStyle={
             entries.length === 0 ? styles.emptyList : styles.listPad
           }
@@ -224,68 +231,3 @@ export default function JournalScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f5f5f7" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  title: { fontSize: 22, fontWeight: "700" },
-  link: { fontSize: 28, color: "#208AEF", fontWeight: "300" },
-  filters: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: "#e8e8ed",
-  },
-  chipActive: { backgroundColor: "#208AEF" },
-  chipText: { fontSize: 14, color: "#333" },
-  chipTextActive: { color: "#fff" },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  emptyList: { flexGrow: 1, justifyContent: "center", padding: 24 },
-  listPad: { paddingBottom: 100 },
-  muted: { fontSize: 16, color: "#666", textAlign: "center" },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e5e5",
-  },
-  rowMain: { flex: 1, gap: 4 },
-  rowTitleLine: { flexDirection: "row", alignItems: "center", gap: 8 },
-  typeBadge: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#208AEF",
-    textTransform: "uppercase",
-  },
-  rowDate: { fontSize: 16, fontWeight: "600" },
-  rowMeta: { fontSize: 14, color: "#666" },
-  rowAmount: { fontSize: 16, fontWeight: "600" },
-  swipeDelete: {
-    backgroundColor: "#D32F2F",
-    justifyContent: "center",
-    alignItems: "flex-end",
-    paddingHorizontal: 20,
-    width: 96,
-  },
-  swipeDeleteText: { color: "#fff", fontWeight: "600" },
-});

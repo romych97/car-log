@@ -1,23 +1,24 @@
 import { router, useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useMemo, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { listAllVehicles } from "@/db/repositories/vehicles";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
+import { createVehiclesScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Vehicle } from "@/types/models";
 
 export default function VehiclesTabScreen() {
   const db = useSQLiteContext();
   const language = useSettingsStore((s) => s.language);
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createVehiclesScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const vs = strings.vehicle;
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -40,6 +41,7 @@ export default function VehiclesTabScreen() {
       <FlatList
         data={vehicles}
         keyExtractor={(v) => v.id}
+        style={{ flex: 1 }}
         contentContainerStyle={
           vehicles.length === 0 ? styles.emptyList : styles.list
         }
@@ -78,33 +80,3 @@ export default function VehiclesTabScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f5f5f7" },
-  header: { paddingHorizontal: 16, paddingVertical: 12 },
-  title: { fontSize: 22, fontWeight: "700" },
-  list: { padding: 16, paddingTop: 0, gap: 8 },
-  emptyList: { padding: 16, flexGrow: 1 },
-  empty: { fontSize: 16, color: "#666", paddingVertical: 24 },
-  addBtn: {
-    backgroundColor: "#208AEF",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  addBtnText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-  },
-  rowMain: { flex: 1 },
-  name: { fontSize: 17, fontWeight: "600" },
-  meta: { fontSize: 14, color: "#666", marginTop: 4 },
-  archived: { fontSize: 13, color: "#888" },
-  chevron: { fontSize: 22, color: "#ccc" },
-});

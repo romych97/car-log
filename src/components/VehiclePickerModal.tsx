@@ -7,6 +7,7 @@ import {
   FlatList,
 } from "react-native";
 
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Vehicle } from "@/types/models";
@@ -25,7 +26,58 @@ export function VehiclePickerModal({
   onSelect,
 }: Props) {
   const language = useSettingsStore((s) => s.language);
+  const { colors } = useAppTheme();
   const strings = useMemo(() => t(language), [language]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        backdrop: {
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.4)",
+          justifyContent: "flex-end",
+        },
+        sheet: {
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          maxHeight: "60%",
+          paddingBottom: 24,
+        },
+        title: {
+          fontSize: 18,
+          fontWeight: "600",
+          padding: 16,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+          color: colors.text,
+        },
+        row: {
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+        },
+        rowTitle: {
+          fontSize: 16,
+          fontWeight: "500",
+          color: colors.text,
+        },
+        rowSubtitle: {
+          fontSize: 14,
+          color: colors.textMuted,
+          marginTop: 2,
+        },
+        cancel: {
+          alignItems: "center",
+          paddingTop: 16,
+        },
+        cancelText: {
+          fontSize: 16,
+          color: colors.tint,
+        },
+      }),
+    [colors],
+  );
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -60,48 +112,3 @@ export function VehiclePickerModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: "60%",
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
-  },
-  row: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#eee",
-  },
-  rowTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  rowSubtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 2,
-  },
-  cancel: {
-    alignItems: "center",
-    paddingTop: 16,
-  },
-  cancelText: {
-    fontSize: 16,
-    color: "#208AEF",
-  },
-});

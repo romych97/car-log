@@ -2,7 +2,6 @@ import { Link, router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -20,7 +19,9 @@ import { useJournal } from "@/hooks/useJournal";
 import { useReminders } from "@/hooks/useReminders";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
 import { useVehicleOdometer, useVehicles } from "@/hooks/useVehicles";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
+import { createHomeScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import {
   formatReminderDueLine,
@@ -35,6 +36,11 @@ export default function HomeScreen() {
   const isPremium = useSettingsStore((s) => s.isPremium);
   const setSelected = useSettingsStore((s) => s.setSelectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createHomeScreenStyles(colors),
+    [colors],
+  );
   const uf = useUnitFormat();
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
@@ -109,7 +115,9 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       ) : (
-        <ScreenScrollView contentContainerStyle={styles.content}>
+        <ScreenScrollView
+          contentContainerStyle={[styles.content, styles.contentGap]}
+        >
           <Pressable
             style={styles.card}
             onPress={() =>
@@ -258,145 +266,3 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#f5f5f7",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  link: {
-    fontSize: 16,
-    color: "#208AEF",
-  },
-  empty: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  emptyBody: {
-    fontSize: 16,
-    color: "#444",
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  content: {
-    padding: 16,
-    gap: 16,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardLabel: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  cardMeta: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
-  odometerLabel: {
-    marginTop: 16,
-    fontSize: 14,
-    color: "#666",
-  },
-  odometerValue: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  tapHint: {
-    marginTop: 12,
-    fontSize: 13,
-    color: "#208AEF",
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: "#666",
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  statPlaceholder: {
-    fontSize: 13,
-    color: "#666",
-    marginTop: 4,
-    lineHeight: 18,
-  },
-  statHint: {
-    fontSize: 11,
-    color: "#888",
-    marginTop: 6,
-  },
-  reminderHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  reminderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 8,
-  },
-  reminderDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  reminderText: { flex: 1 },
-  reminderTitle: { fontSize: 15, fontWeight: "600" },
-  reminderMeta: { fontSize: 13, color: "#666", marginTop: 2 },
-  primaryButton: {
-    backgroundColor: "#208AEF",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#208AEF",
-  },
-  secondaryButtonText: {
-    color: "#208AEF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

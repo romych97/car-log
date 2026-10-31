@@ -1,4 +1,4 @@
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -90,7 +90,12 @@ export default function SettingsScreen() {
   const purchasesReady = isPurchasesConfigured();
 
   useEffect(() => {
-    loadLastExportUriFromDisk().then((uri) => setHasLastExport(uri != null));
+    loadLastExportUriFromDisk().then((uri) => {
+      setHasLastExport((prev) => {
+        const next = uri != null;
+        return prev === next ? prev : next;
+      });
+    });
   }, []);
 
   const finishImport = useCallback(
@@ -241,8 +246,7 @@ export default function SettingsScreen() {
   }, [currencyDraft, persist]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <Stack.Screen options={{ headerShown: false }} />
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.toolbar}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Text style={styles.backLink}>{strings.common.cancel}</Text>
@@ -250,7 +254,7 @@ export default function SettingsScreen() {
         <Text style={styles.toolbarTitle}>{ss.title}</Text>
         <View style={styles.toolbarSpacer} />
       </View>
-      <ScreenScrollView contentContainerStyle={styles.content}>
+      <ScreenScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>{ss.sectionAppearance}</Text>
         <Text style={styles.fieldLabel}>{ss.theme}</Text>
         <View style={styles.optionGroup}>
@@ -397,18 +401,18 @@ export default function SettingsScreen() {
             <Text style={styles.secondaryBtnText}>{ss.importBackup}</Text>
           </Pressable>
         </View>
-        {hasLastExport && (
-          <>
-            <Text style={styles.hint}>{ss.importLastExportHint}</Text>
-            <Pressable
-              style={[styles.secondaryBtn, styles.fullWidthBtn, busy && styles.btnDisabled]}
-              onPress={onImportLastExport}
-              disabled={busy}
-            >
-              <Text style={styles.secondaryBtnText}>{ss.importLastExport}</Text>
-            </Pressable>
-          </>
-        )}
+        <Text style={styles.hint}>{ss.importLastExportHint}</Text>
+        <Pressable
+          style={[
+            styles.secondaryBtn,
+            styles.fullWidthBtn,
+            (busy || !hasLastExport) && styles.btnDisabled,
+          ]}
+          onPress={onImportLastExport}
+          disabled={busy || !hasLastExport}
+        >
+          <Text style={styles.secondaryBtnText}>{ss.importLastExport}</Text>
+        </Pressable>
       </ScreenScrollView>
     </SafeAreaView>
   );
