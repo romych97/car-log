@@ -1,6 +1,6 @@
-import { Stack } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -12,11 +12,27 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { replaceDatabaseFromBackup } from "@/backup/database";
-import { exportAndShareBackup, readBackupFromPicker, readLastExportBackup, getLastExportCacheUri } from "@/backup/share";
+import {
+  mergeDatabaseFromBackup,
+  replaceDatabaseFromBackup,
+} from "@/backup/database";
+import {
+  exportAndShareBackup,
+  getLastExportCacheUri,
+  loadLastExportUriFromDisk,
+  readBackupFromPicker,
+  readLastExportBackup,
+} from "@/backup/share";
 import { parseBackupJson, importErrorMessage } from "@/backup/serialize";
 import { saveSettings } from "@/db/repositories/settings";
 import { syncAllReminderNotifications } from "@/notifications/reminders";
+import {
+  isPurchasesConfigured,
+  purchasePremiumPackage,
+  restorePremiumPurchases,
+  syncPremiumToDatabase,
+} from "@/purchases/revenueCat";
+import { exportVehiclePdfReport } from "@/reports/pdfReport";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
 import type {
@@ -53,6 +69,7 @@ export default function SettingsScreen() {
   const isPremium = useSettingsStore((s) => s.isPremium);
   const hydrate = useSettingsStore((s) => s.hydrate);
   const patch = useSettingsStore((s) => s.patch);
+  const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
   const ss = strings.settings;
   const [currencyDraft, setCurrencyDraft] = useState(currency);
@@ -60,14 +77,21 @@ export default function SettingsScreen() {
   const [hasLastExport, setHasLastExport] = useState(
     () => getLastExportCacheUri() != null,
   );
+  const purchasesReady = isPurchasesConfigured();
 
-  const applyBackupRaw = useCallback(
-    async (loadRaw: () => Promise<string>) => {
+  useEffect(() => {
+    loadLastExportUriFromDisk().then((uri) => setHasLastExport(uri != null));
+  }, []);
+
+  const finishImport = useCallback(
+    async (loadRaw: () => Promise<string>, merge: boolean) => {
       setBusy(true);
       try {
         const raw = await loadRaw();
         const backup = parseBackupJson(raw);
-        const merged = await replaceDatabaseFromBackup(db, backup);
+        const merged = merge
+          ? await mergeDatabaseFromBackup(db, backup)
+          : await replaceDatabaseFromBackup(db, backup);
         hydrate(merged);
         try {
           await syncAllReminderNotifications(db, merged.language);
@@ -86,13 +110,28 @@ export default function SettingsScreen() {
     [db, hydrate, ss],
   );
 
+  const promptImportMode = useCallback(
+    (loadRaw: () => Promise<string>) => {
+      Alert.alert(ss.importMergeTitle, ss.importMergeMessage, [
+        { text: strings.common.cancel, style: "cancel" },
+        { text: ss.importMerge, onPress: () => finishImport(loadRaw, true) },
+        {
+          text: ss.importReplace,
+          style: "destructive",
+          onPress: () => finishImport(loadRaw, false),
+        },
+      ]);
+    },
+    [finishImport, ss, strings.common.cancel],
+  );
+
   const runImport = useCallback(() => {
-    applyBackupRaw(readBackupFromPicker);
-  }, [applyBackupRaw]);
+    promptImportMode(readBackupFromPicker);
+  }, [promptImportMode]);
 
   const runImportLastExport = useCallback(() => {
-    applyBackupRaw(readLastExportBackup);
-  }, [applyBackupRaw]);
+    promptImportMode(readLastExportBackup);
+  }, [promptImportMode]);
 
   const persist = useCallback(
     async (partial: Partial<Settings>) => {
@@ -122,26 +161,68 @@ export default function SettingsScreen() {
   }, [db, ss]);
 
   const onImport = useCallback(() => {
-    Alert.alert(ss.importConfirmTitle, ss.importConfirmMessage, [
-      { text: strings.common.cancel, style: "cancel" },
-      {
-        text: ss.importBackup,
-        style: "destructive",
-        onPress: () => runImport(),
-      },
-    ]);
-  }, [runImport, ss, strings.common.cancel]);
+    runImport();
+  }, [runImport]);
 
   const onImportLastExport = useCallback(() => {
-    Alert.alert(ss.importConfirmTitle, ss.importConfirmMessage, [
-      { text: strings.common.cancel, style: "cancel" },
-      {
-        text: ss.importLastExport,
-        style: "destructive",
-        onPress: () => runImportLastExport(),
-      },
-    ]);
-  }, [runImportLastExport, ss, strings.common.cancel]);
+    runImportLastExport();
+  }, [runImportLastExport]);
+
+  const onBuyPremium = useCallback(async () => {
+    if (!purchasesReady) return;
+    setBusy(true);
+    try {
+      const result = await purchasePremiumPackage();
+      if (result.userCanceled) return;
+      const active = await syncPremiumToDatabase(db);
+      patch({ isPremium: active });
+      if (active) Alert.alert(ss.premiumSuccess);
+    } catch (err) {
+      console.error("[carlog] Purchase failed:", err);
+      Alert.alert(ss.importError, String(err));
+    } finally {
+      setBusy(false);
+    }
+  }, [db, patch, purchasesReady, ss]);
+
+  const onRestorePremium = useCallback(async () => {
+    if (!purchasesReady) return;
+    setBusy(true);
+    try {
+      const active = await restorePremiumPurchases();
+      await saveSettings(db, {
+        ...useSettingsStore.getState(),
+        isPremium: active,
+      });
+      patch({ isPremium: active });
+      Alert.alert(ss.premiumRestoreDone);
+    } catch (err) {
+      console.error("[carlog] Restore failed:", err);
+      Alert.alert(ss.importError, String(err));
+    } finally {
+      setBusy(false);
+    }
+  }, [db, patch, purchasesReady, ss]);
+
+  const onExportPdf = useCallback(async () => {
+    if (!vehicleId) {
+      Alert.alert(strings.stats.noVehicle);
+      return;
+    }
+    setBusy(true);
+    try {
+      await exportVehiclePdfReport(db, vehicleId);
+      Alert.alert(ss.pdfDone);
+    } catch (err) {
+      if (String(err).includes("sharing_unavailable")) {
+        Alert.alert(ss.sharingUnavailable);
+      } else {
+        Alert.alert(ss.importError, importErrorMessage(err));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, [db, ss, strings.stats.noVehicle, vehicleId]);
 
   const saveCurrency = useCallback(async () => {
     const code = currencyDraft.trim().toUpperCase().slice(0, 8);
@@ -215,7 +296,44 @@ export default function SettingsScreen() {
             {isPremium ? ss.premiumActive : ss.premiumInactive}
           </Text>
           <Text style={styles.hint}>{ss.premiumHint}</Text>
+          {!purchasesReady && (
+            <Text style={styles.hint}>{ss.premiumNotConfigured}</Text>
+          )}
+          {purchasesReady && !isPremium && (
+            <Pressable
+              style={[styles.primaryBtn, styles.fullWidthBtn, busy && styles.btnDisabled]}
+              onPress={onBuyPremium}
+              disabled={busy}
+            >
+              <Text style={styles.primaryBtnText}>{ss.premiumBuy}</Text>
+            </Pressable>
+          )}
+          {purchasesReady && (
+            <Pressable
+              style={[styles.secondaryBtn, styles.fullWidthBtn, busy && styles.btnDisabled]}
+              onPress={onRestorePremium}
+              disabled={busy}
+            >
+              <Text style={styles.secondaryBtnText}>{ss.premiumRestore}</Text>
+            </Pressable>
+          )}
         </View>
+
+        <Text style={styles.hint}>{ss.devBuildHint}</Text>
+
+        <Link href="/vehicles" asChild>
+          <Pressable style={[styles.secondaryBtn, styles.fullWidthBtn]}>
+            <Text style={styles.secondaryBtnText}>{ss.manageVehicles}</Text>
+          </Pressable>
+        </Link>
+
+        <Pressable
+          style={[styles.secondaryBtn, styles.fullWidthBtn, busy && styles.btnDisabled]}
+          onPress={onExportPdf}
+          disabled={busy}
+        >
+          <Text style={styles.secondaryBtnText}>{ss.exportPdf}</Text>
+        </Pressable>
 
         <Text style={[styles.sectionTitle, styles.sectionGap]}>
           {ss.sectionBackup}

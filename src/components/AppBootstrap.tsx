@@ -5,6 +5,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { getSettings, setSelectedVehicleId } from "@/db/repositories/settings";
 import { listActiveVehicles } from "@/db/repositories/vehicles";
 import { syncAllReminderNotifications } from "@/notifications/reminders";
+import { loadLastExportUriFromDisk } from "@/backup/share";
+import { syncPremiumToDatabase } from "@/purchases/revenueCat";
 import { useSettingsStore } from "@/store/settingsStore";
 
 type Props = {
@@ -22,7 +24,10 @@ export function AppBootstrap({ children }: Props) {
     let cancelled = false;
 
     async function bootstrap() {
-      const settings = await getSettings(db);
+      await loadLastExportUriFromDisk();
+      let settings = await getSettings(db);
+      await syncPremiumToDatabase(db);
+      settings = await getSettings(db);
       const vehicles = await listActiveVehicles(db);
 
       let selectedId = settings.selectedVehicleId;
