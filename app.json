@@ -50,6 +50,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "revenueCatAppleApiKey": "",
+      "revenueCatGoogleApiKey": "",
+      "revenueCatEntitlementId": "premium"
     }
   }
 }
