@@ -15,46 +15,45 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <SQLiteProvider databaseName="carlog.db" onInit={migrateDbIfNeeded}>
         <AppBootstrap>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
             <Stack.Screen
               name="vehicle/new"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
             <Stack.Screen
               name="vehicle/[id]"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
-            <Stack.Screen name="vehicles/index" options={{ title: "Vehicles" }} />
             <Stack.Screen
               name="fuel/new"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
             <Stack.Screen
               name="fuel/[id]"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
             <Stack.Screen
               name="expense/new"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
             <Stack.Screen
               name="expense/[id]"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
             <Stack.Screen
               name="reminder/new"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
             <Stack.Screen
               name="reminder/[id]"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
             <Stack.Screen
               name="reminder/complete/[id]"
-              options={{ presentation: "modal", headerShown: false }}
+              options={{ presentation: "modal" }}
             />
-            <Stack.Screen name="settings" options={{ title: "Settings" }} />
+            <Stack.Screen name="settings" />
           </Stack>
           <StatusBar style="auto" />
         </AppBootstrap>

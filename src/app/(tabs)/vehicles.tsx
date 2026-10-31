@@ -1,4 +1,4 @@
-import { router, Stack, useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -15,12 +15,11 @@ import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Vehicle } from "@/types/models";
 
-export default function VehiclesScreen() {
+export default function VehiclesTabScreen() {
   const db = useSQLiteContext();
   const language = useSettingsStore((s) => s.language);
   const strings = useMemo(() => t(language), [language]);
   const vs = strings.vehicle;
-  const ss = strings.settings;
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   const refresh = useCallback(async () => {
@@ -34,8 +33,10 @@ export default function VehiclesScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: ss.manageVehicles }} />
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{strings.tabs.vehicles}</Text>
+      </View>
       <FlatList
         data={vehicles}
         keyExtractor={(v) => v.id}
@@ -80,7 +81,9 @@ export default function VehiclesScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f5f5f7" },
-  list: { padding: 16, gap: 8 },
+  header: { paddingHorizontal: 16, paddingVertical: 12 },
+  title: { fontSize: 22, fontWeight: "700" },
+  list: { padding: 16, paddingTop: 0, gap: 8 },
   emptyList: { padding: 16, flexGrow: 1 },
   empty: { fontSize: 16, color: "#666", paddingVertical: 24 },
   addBtn: {

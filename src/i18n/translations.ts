@@ -3,6 +3,7 @@ import type { AppLanguage } from "@/types/models";
 const ru = {
   tabs: {
     home: "Главная",
+    vehicles: "Авто",
     journal: "Журнал",
     maintenance: "ТО",
     stats: "Статистика",
@@ -269,6 +270,7 @@ const ru = {
 const en = {
   tabs: {
     home: "Home",
+    vehicles: "Vehicles",
     journal: "Journal",
     maintenance: "Service",
     stats: "Stats",

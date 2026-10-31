@@ -1,4 +1,4 @@
-import { Link, Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -231,8 +231,15 @@ export default function SettingsScreen() {
   }, [currencyDraft, persist]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <Stack.Screen options={{ title: ss.title }} />
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.toolbar}>
+        <Pressable onPress={() => router.back()} hitSlop={8}>
+          <Text style={styles.backLink}>{strings.common.cancel}</Text>
+        </Pressable>
+        <Text style={styles.toolbarTitle}>{ss.title}</Text>
+        <View style={styles.toolbarSpacer} />
+      </View>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>{ss.sectionUnits}</Text>
         <Text style={styles.fieldLabel}>{ss.language}</Text>
@@ -321,12 +328,6 @@ export default function SettingsScreen() {
 
         <Text style={styles.hint}>{ss.devBuildHint}</Text>
 
-        <Link href="/vehicles" asChild>
-          <Pressable style={[styles.secondaryBtn, styles.fullWidthBtn]}>
-            <Text style={styles.secondaryBtnText}>{ss.manageVehicles}</Text>
-          </Pressable>
-        </Link>
-
         <Pressable
           style={[styles.secondaryBtn, styles.fullWidthBtn, busy && styles.btnDisabled]}
           onPress={onExportPdf}
@@ -374,6 +375,19 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f5f5f7" },
+  toolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#ddd",
+    backgroundColor: "#f5f5f7",
+  },
+  backLink: { fontSize: 17, color: "#208AEF", minWidth: 72 },
+  toolbarTitle: { fontSize: 17, fontWeight: "600" },
+  toolbarSpacer: { minWidth: 72 },
   content: { padding: 16, paddingBottom: 40, gap: 8 },
   sectionTitle: {
     fontSize: 13,

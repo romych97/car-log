@@ -1,7 +1,13 @@
 import { useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { useCallback, useMemo, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,7 +25,38 @@ import { useSettingsStore } from "@/store/settingsStore";
 import type { Expense, ExpenseCategory, FuelLog } from "@/types/models";
 import { formatMoneyMinor } from "@/utils/money";
 
-const CHART_WIDTH = Dimensions.get("window").width - 48;
+/** Space for Y-axis numeric labels (gifted-charts draws these outside `width`). */
+const Y_AXIS_LABEL_WIDTH = 56;
+const CHART_SIDE_INSET = 8;
+
+function formatChartMoneyAxis(value: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return value;
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) {
+    const m = abs / 1_000_000;
+    return `${n < 0 ? "-" : ""}${m >= 10 ? Math.round(m) : m.toFixed(1).replace(/\.0$/, "")}M`;
+  }
+  if (abs >= 1000) {
+    return `${n < 0 ? "-" : ""}${Math.round(abs / 1000)}k`;
+  }
+  return String(Math.round(n));
+}
+
+function ChartFrame({ children }: { children: (plotWidth: number) => ReactNode }) {
+  const [plotWidth, setPlotWidth] = useState(0);
+
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
+    const inner = event.nativeEvent.layout.width - Y_AXIS_LABEL_WIDTH - CHART_SIDE_INSET;
+    setPlotWidth(Math.max(120, Math.floor(inner)));
+  }, []);
+
+  return (
+    <View style={styles.chartFrame} onLayout={onLayout}>
+      {plotWidth > 0 ? children(plotWidth) : null}
+    </View>
+  );
+}
 
 export default function StatsScreen() {
   const db = useSQLiteContext();
@@ -117,17 +154,34 @@ export default function StatsScreen() {
           <Text style={styles.cardTitle}>{st.monthlySpend}</Text>
           <Text style={styles.hint}>{st.monthlyHint}</Text>
           {monthlyHasData ? (
-            <BarChart
-              data={barData}
-              width={CHART_WIDTH}
-              barWidth={28}
-              spacing={18}
-              roundedTop
-              yAxisTextStyle={styles.axisText}
-              xAxisLabelTextStyle={styles.axisText}
-              noOfSections={4}
-              maxValue={Math.max(...barData.map((d) => d.value), 1) * 1.2}
-            />
+            <ChartFrame>
+              {(plotWidth) => {
+                const n = Math.max(barData.length, 1);
+                const spacing = 12;
+                const barWidth = Math.min(
+                  28,
+                  Math.floor((plotWidth - 24 - spacing * (n - 1)) / n),
+                );
+                return (
+                  <BarChart
+                    data={barData}
+                    width={plotWidth}
+                    barWidth={Math.max(barWidth, 8)}
+                    spacing={spacing}
+                    initialSpacing={12}
+                    endSpacing={12}
+                    roundedTop
+                    yAxisLabelWidth={Y_AXIS_LABEL_WIDTH}
+                    formatYLabel={formatChartMoneyAxis}
+                    yAxisTextStyle={styles.axisText}
+                    xAxisLabelTextStyle={styles.axisText}
+                    noOfSections={4}
+                    maxValue={Math.max(...barData.map((d) => d.value), 1) * 1.2}
+                    disableScroll
+                  />
+                );
+              }}
+            </ChartFrame>
           ) : (
             <Text style={styles.placeholder}>{st.noData}</Text>
           )}
@@ -143,19 +197,28 @@ export default function StatsScreen() {
           <Text style={styles.hint}>{st.byCategoryHint}</Text>
           {categoryHasData ? (
             <>
-              <BarChart
-                horizontal
-                data={categoryBars}
-                width={CHART_WIDTH}
-                barWidth={22}
-                spacing={28}
-                yAxisTextStyle={styles.axisText}
-                xAxisLabelTextStyle={styles.axisText}
-                noOfSections={4}
-                maxValue={
-                  Math.max(...categoryBars.map((d) => d.value), 1) * 1.2
-                }
-              />
+              <ChartFrame>
+                {(plotWidth) => (
+                  <BarChart
+                    horizontal
+                    data={categoryBars}
+                    width={plotWidth}
+                    barWidth={22}
+                    spacing={28}
+                    initialSpacing={8}
+                    endSpacing={12}
+                    yAxisLabelWidth={Y_AXIS_LABEL_WIDTH}
+                    formatYLabel={formatChartMoneyAxis}
+                    yAxisTextStyle={styles.axisText}
+                    xAxisLabelTextStyle={styles.axisText}
+                    noOfSections={4}
+                    maxValue={
+                      Math.max(...categoryBars.map((d) => d.value), 1) * 1.2
+                    }
+                    disableScroll
+                  />
+                )}
+              </ChartFrame>
               {categories.slice(0, 6).map((row) => (
                 <Text key={row.category} style={styles.categoryLine}>
                   {strings.expense.categories[row.category]}:{" "}
@@ -172,17 +235,25 @@ export default function StatsScreen() {
           <Text style={styles.cardTitle}>{st.consumption}</Text>
           <Text style={styles.hint}>{consumptionHintText}</Text>
           {lineData.length >= 2 ? (
-            <LineChart
-              data={lineData}
-              width={CHART_WIDTH}
-              spacing={40}
-              color="#208AEF"
-              thickness={2}
-              yAxisTextStyle={styles.axisText}
-              xAxisLabelTextStyle={styles.axisText}
-              noOfSections={4}
-              maxValue={Math.max(...lineData.map((d) => d.value), 1) * 1.15}
-            />
+            <ChartFrame>
+              {(plotWidth) => (
+                <LineChart
+                  data={lineData}
+                  width={plotWidth}
+                  spacing={40}
+                  initialSpacing={12}
+                  endSpacing={12}
+                  color="#208AEF"
+                  thickness={2}
+                  yAxisLabelWidth={Y_AXIS_LABEL_WIDTH}
+                  yAxisTextStyle={styles.axisText}
+                  xAxisLabelTextStyle={styles.axisText}
+                  noOfSections={4}
+                  maxValue={Math.max(...lineData.map((d) => d.value), 1) * 1.15}
+                  disableScroll
+                />
+              )}
+            </ChartFrame>
           ) : (
             <Text style={styles.placeholder}>{st.noData}</Text>
           )}
@@ -217,6 +288,11 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 17, fontWeight: "600" },
   hint: { fontSize: 13, color: "#666", marginTop: 4, marginBottom: 12 },
+  chartFrame: {
+    width: "100%",
+    overflow: "hidden",
+    alignSelf: "stretch",
+  },
   placeholder: { fontSize: 15, color: "#888", paddingVertical: 24 },
   axisText: { fontSize: 10, color: "#666" },
   legend: { fontSize: 12, color: "#888", marginTop: 8 },

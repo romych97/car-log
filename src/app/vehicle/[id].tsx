@@ -127,7 +127,7 @@ export default function EditVehicleScreen() {
               await setSelectedVehicleId(db, nextId);
               setSelected(nextId);
             }
-            router.replace("/vehicles");
+            router.replace("/(tabs)/vehicles");
           } finally {
             setSaving(false);
           }

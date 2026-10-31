@@ -29,6 +29,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="vehicles"
+        options={{
+          title: strings.tabs.vehicles,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons
+              name="car-outline"
+              size={size}
+              color={typeof color === "string" ? color : "#208AEF"}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="journal"
         options={{
           title: strings.tabs.journal,
