@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 2;
 
 const SCHEMA_V1 = `
 PRAGMA journal_mode = 'wal';
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
   volume_unit TEXT NOT NULL DEFAULT 'l',
   currency TEXT NOT NULL DEFAULT 'RUB',
   language TEXT NOT NULL DEFAULT 'ru',
+  theme TEXT NOT NULL DEFAULT 'system',
   is_premium INTEGER NOT NULL DEFAULT 0,
   selected_vehicle_id TEXT
 );
@@ -72,22 +73,40 @@ CREATE INDEX IF NOT EXISTS idx_expenses_vehicle_date ON expenses (vehicle_id, da
 CREATE INDEX IF NOT EXISTS idx_reminders_vehicle ON reminders (vehicle_id);
 `;
 
+async function appSettingsHasColumn(
+  db: SQLiteDatabase,
+  column: string,
+): Promise<boolean> {
+  const rows = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(app_settings)",
+  );
+  return rows.some((row) => row.name === column);
+}
+
+/** Idempotent — fixes DBs where user_version was bumped without ALTER (dev builds). */
+async function ensureAppSettingsThemeColumn(db: SQLiteDatabase): Promise<void> {
+  if (await appSettingsHasColumn(db, "theme")) {
+    return;
+  }
+  await db.execAsync(
+    `ALTER TABLE app_settings ADD COLUMN theme TEXT NOT NULL DEFAULT 'system'`,
+  );
+}
+
 export async function migrateDbIfNeeded(db: SQLiteDatabase): Promise<void> {
   const result = await db.getFirstAsync<{ user_version: number }>(
     "PRAGMA user_version",
   );
   let currentVersion = result?.user_version ?? 0;
 
-  if (currentVersion >= DATABASE_VERSION) {
-    return;
-  }
-
   if (currentVersion === 0) {
     await db.execAsync(SCHEMA_V1);
     currentVersion = 1;
   }
 
-  // Future: if (currentVersion === 1) { ...; currentVersion = 2; }
+  await ensureAppSettingsThemeColumn(db);
 
-  await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
+  if (currentVersion < DATABASE_VERSION) {
+    await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
+  }
 }

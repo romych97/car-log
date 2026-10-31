@@ -14,6 +14,8 @@ import {
 import { readTextFromUri } from "@/backup/readUri";
 import { normalizeBackupRaw } from "@/backup/text";
 
+const EXPORT_CACHE_SUBDIR = "carlog-exports/";
+
 function backupFileName(date = new Date()): string {
   const stamp = date.toISOString().replace(/[:.]/g, "-").slice(0, 19);
   return `carlog-backup-${stamp}.json`;
@@ -25,27 +27,64 @@ export function getLastExportCacheUri(): string | null {
 
 export { loadLastExportUriFromDisk };
 
+async function ensureDirectory(uri: string): Promise<void> {
+  const info = await FileSystem.getInfoAsync(uri);
+  if (!info.exists) {
+    await FileSystem.makeDirectoryAsync(uri, { intermediates: true });
+  }
+}
+
+/** Writable path for Sharing (cache). Persistent copy kept in documents when available. */
+async function writeBackupFiles(json: string, fileName: string): Promise<{
+  shareUri: string;
+  persistUri: string;
+}> {
+  const cacheDir = FileSystem.cacheDirectory;
+  const docDir = FileSystem.documentDirectory;
+
+  if (!cacheDir && !docDir) {
+    throw new Error("no_cache_dir");
+  }
+
+  let shareUri: string;
+  if (cacheDir) {
+    const exportDir = `${cacheDir}${EXPORT_CACHE_SUBDIR}`;
+    await ensureDirectory(exportDir);
+    shareUri = `${exportDir}${fileName}`;
+    await FileSystem.writeAsStringAsync(shareUri, json, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+  } else {
+    shareUri = `${docDir}${fileName}`;
+    await FileSystem.writeAsStringAsync(shareUri, json, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+  }
+
+  let persistUri = shareUri;
+  if (docDir && shareUri.startsWith(cacheDir ?? "")) {
+    persistUri = `${docDir}${fileName}`;
+    await FileSystem.writeAsStringAsync(persistUri, json, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+  }
+
+  return { shareUri, persistUri };
+}
+
 export async function exportAndShareBackup(db: SQLiteDatabase): Promise<void> {
   const payload = await buildBackupPayload(db);
   const json = JSON.stringify(payload, null, 2);
-  const docDir = FileSystem.documentDirectory;
-  const cacheDir = FileSystem.cacheDirectory;
-  const baseDir = docDir ?? cacheDir;
-  if (!baseDir) {
-    throw new Error("no_cache_dir");
-  }
-  const uri = `${baseDir}${backupFileName()}`;
-  await FileSystem.writeAsStringAsync(uri, json, {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
-  await rememberLastExportUri(uri);
+  const fileName = backupFileName();
+  const { shareUri, persistUri } = await writeBackupFiles(json, fileName);
+  await rememberLastExportUri(persistUri);
 
   if (Platform.OS === "web") {
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = backupFileName();
+    anchor.download = fileName;
     anchor.click();
     URL.revokeObjectURL(url);
     return;
@@ -55,9 +94,16 @@ export async function exportAndShareBackup(db: SQLiteDatabase): Promise<void> {
   if (!canShare) {
     throw new Error("sharing_unavailable");
   }
-  await Sharing.shareAsync(uri, {
+
+  const shareInfo = await FileSystem.getInfoAsync(shareUri);
+  if (!shareInfo.exists) {
+    throw new Error("export_file_missing");
+  }
+
+  await Sharing.shareAsync(shareUri, {
     mimeType: "application/json",
-    dialogTitle: backupFileName(),
+    dialogTitle: fileName,
+    UTI: "public.json",
   });
 }
 

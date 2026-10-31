@@ -123,6 +123,7 @@ export async function buildBackupPayload(
       volumeUnit: settings.volumeUnit,
       currency: settings.currency,
       language: settings.language,
+      themeMode: settings.themeMode,
       isPremium: settings.isPremium,
       selectedVehicleId: settings.selectedVehicleId,
     },
@@ -158,6 +159,7 @@ export async function replaceDatabaseFromBackup(
     volumeUnit: backup.settings.volumeUnit,
     currency: backup.settings.currency,
     language: backup.settings.language,
+    themeMode: backup.settings.themeMode ?? current.themeMode,
     isPremium: current.isPremium,
     selectedVehicleId: selectedId,
   };

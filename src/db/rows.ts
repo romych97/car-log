@@ -1,3 +1,4 @@
+import type { AppThemeMode } from "@/theme/colors";
 import type {
   AppLanguage,
   DistanceUnit,
@@ -29,9 +30,15 @@ export type SettingsRow = {
   volume_unit: string;
   currency: string;
   language: string;
+  theme?: string | null;
   is_premium: number;
   selected_vehicle_id: string | null;
 };
+
+function parseThemeMode(raw: string | null | undefined): AppThemeMode {
+  if (raw === "light" || raw === "dark" || raw === "system") return raw;
+  return "system";
+}
 
 export type ReminderRow = {
   id: string;
@@ -138,6 +145,7 @@ export function rowToSettings(row: SettingsRow): Settings {
     volumeUnit: row.volume_unit as VolumeUnit,
     currency: row.currency,
     language: row.language as AppLanguage,
+    themeMode: parseThemeMode(row.theme),
     isPremium: row.is_premium !== 0,
     selectedVehicleId: row.selected_vehicle_id,
   };

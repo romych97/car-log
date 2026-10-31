@@ -184,6 +184,11 @@ const ru = {
   settings: {
     title: "Настройки",
     sectionUnits: "Единицы и язык",
+    sectionAppearance: "Оформление",
+    theme: "Тема",
+    themeSystem: "Как в системе",
+    themeLight: "Светлая",
+    themeDark: "Тёмная",
     language: "Язык",
     languageRu: "Русский",
     languageEn: "English",
@@ -451,6 +456,11 @@ const en = {
   settings: {
     title: "Settings",
     sectionUnits: "Units & language",
+    sectionAppearance: "Appearance",
+    theme: "Theme",
+    themeSystem: "System",
+    themeLight: "Light",
+    themeDark: "Dark",
     language: "Language",
     languageRu: "Russian",
     languageEn: "English",

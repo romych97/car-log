@@ -23,6 +23,7 @@ export async function saveSettings(
       volume_unit = ?,
       currency = ?,
       language = ?,
+      theme = ?,
       is_premium = ?,
       selected_vehicle_id = ?
     WHERE id = 1`,
@@ -30,6 +31,7 @@ export async function saveSettings(
     settings.volumeUnit,
     settings.currency,
     settings.language,
+    settings.themeMode,
     settings.isPremium ? 1 : 0,
     settings.selectedVehicleId,
   );

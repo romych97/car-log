@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -34,10 +33,13 @@ import {
   syncPremiumToDatabase,
 } from "@/purchases/revenueCat";
 import { exportVehiclePdfReport } from "@/reports/pdfReport";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
+import { createSettingsScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import type {
   AppLanguage,
+  AppThemeMode,
   DistanceUnit,
   Settings,
   VolumeUnit,
@@ -47,9 +49,10 @@ type OptionRowProps = {
   label: string;
   selected: boolean;
   onPress: () => void;
+  styles: ReturnType<typeof createSettingsScreenStyles>;
 };
 
-function OptionRow({ label, selected, onPress }: OptionRowProps) {
+function OptionRow({ label, selected, onPress, styles }: OptionRowProps) {
   return (
     <Pressable
       style={[styles.optionRow, selected && styles.optionRowSelected]}
@@ -64,6 +67,7 @@ function OptionRow({ label, selected, onPress }: OptionRowProps) {
 export default function SettingsScreen() {
   const db = useSQLiteContext();
   const language = useSettingsStore((s) => s.language);
+  const themeMode = useSettingsStore((s) => s.themeMode);
   const distanceUnit = useSettingsStore((s) => s.distanceUnit);
   const volumeUnit = useSettingsStore((s) => s.volumeUnit);
   const currency = useSettingsStore((s) => s.currency);
@@ -71,6 +75,11 @@ export default function SettingsScreen() {
   const hydrate = useSettingsStore((s) => s.hydrate);
   const patch = useSettingsStore((s) => s.patch);
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createSettingsScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const ss = strings.settings;
   const [currencyDraft, setCurrencyDraft] = useState(currency);
@@ -242,15 +251,42 @@ export default function SettingsScreen() {
         <View style={styles.toolbarSpacer} />
       </View>
       <ScreenScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>{ss.sectionUnits}</Text>
+        <Text style={styles.sectionTitle}>{ss.sectionAppearance}</Text>
+        <Text style={styles.fieldLabel}>{ss.theme}</Text>
+        <View style={styles.optionGroup}>
+          <OptionRow
+            styles={styles}
+            label={ss.themeSystem}
+            selected={themeMode === "system"}
+            onPress={() => persist({ themeMode: "system" as AppThemeMode })}
+          />
+          <OptionRow
+            styles={styles}
+            label={ss.themeLight}
+            selected={themeMode === "light"}
+            onPress={() => persist({ themeMode: "light" as AppThemeMode })}
+          />
+          <OptionRow
+            styles={styles}
+            label={ss.themeDark}
+            selected={themeMode === "dark"}
+            onPress={() => persist({ themeMode: "dark" as AppThemeMode })}
+          />
+        </View>
+
+        <Text style={[styles.sectionTitle, styles.sectionGap]}>
+          {ss.sectionUnits}
+        </Text>
         <Text style={styles.fieldLabel}>{ss.language}</Text>
         <View style={styles.optionGroup}>
           <OptionRow
+            styles={styles}
             label={ss.languageRu}
             selected={language === "ru"}
             onPress={() => persist({ language: "ru" as AppLanguage })}
           />
           <OptionRow
+            styles={styles}
             label={ss.languageEn}
             selected={language === "en"}
             onPress={() => persist({ language: "en" as AppLanguage })}
@@ -260,11 +296,13 @@ export default function SettingsScreen() {
         <Text style={styles.fieldLabel}>{ss.distanceUnit}</Text>
         <View style={styles.optionGroup}>
           <OptionRow
+            styles={styles}
             label={ss.unitKm}
             selected={distanceUnit === "km"}
             onPress={() => persist({ distanceUnit: "km" as DistanceUnit })}
           />
           <OptionRow
+            styles={styles}
             label={ss.unitMi}
             selected={distanceUnit === "mi"}
             onPress={() => persist({ distanceUnit: "mi" as DistanceUnit })}
@@ -274,11 +312,13 @@ export default function SettingsScreen() {
         <Text style={styles.fieldLabel}>{ss.volumeUnit}</Text>
         <View style={styles.optionGroup}>
           <OptionRow
+            styles={styles}
             label={ss.unitLiters}
             selected={volumeUnit === "l"}
             onPress={() => persist({ volumeUnit: "l" as VolumeUnit })}
           />
           <OptionRow
+            styles={styles}
             label={ss.unitGal}
             selected={volumeUnit === "gal"}
             onPress={() => persist({ volumeUnit: "gal" as VolumeUnit })}
@@ -373,87 +413,3 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f5f5f7" },
-  toolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
-    backgroundColor: "#f5f5f7",
-  },
-  backLink: { fontSize: 17, color: "#208AEF", minWidth: 72 },
-  toolbarTitle: { fontSize: 17, fontWeight: "600" },
-  toolbarSpacer: { minWidth: 72 },
-  content: { padding: 16, paddingBottom: 40, gap: 8 },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#666",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginTop: 8,
-  },
-  sectionGap: { marginTop: 20 },
-  fieldLabel: { fontSize: 16, fontWeight: "600", marginTop: 12 },
-  hint: { fontSize: 13, color: "#666", lineHeight: 18, marginTop: 4 },
-  optionGroup: {
-    marginTop: 8,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e5e5",
-  },
-  optionRowSelected: { backgroundColor: "#E6F4FE" },
-  optionLabel: { fontSize: 16 },
-  optionCheck: { color: "#208AEF", fontWeight: "700", fontSize: 18 },
-  input: {
-    marginTop: 8,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-  },
-  cardTitle: { fontSize: 17, fontWeight: "600" },
-  rowButtons: { flexDirection: "row", gap: 12, marginTop: 12 },
-  primaryBtn: {
-    flex: 1,
-    backgroundColor: "#208AEF",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryBtnText: { color: "#fff", fontWeight: "600" },
-  secondaryBtn: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#208AEF",
-  },
-  secondaryBtnText: { color: "#208AEF", fontWeight: "600" },
-  fullWidthBtn: { marginTop: 8 },
-  btnDisabled: { opacity: 0.5 },
-});

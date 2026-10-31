@@ -1,17 +1,25 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router";
 
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { useSettingsStore } from "@/store/settingsStore";
 
 export default function TabLayout() {
   const language = useSettingsStore((s) => s.language);
+  const { colors } = useAppTheme();
   const strings = t(language);
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#208AEF",
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.tabBarBorder,
+        },
+        sceneStyle: { backgroundColor: colors.background },
         headerShown: false,
       }}
     >
@@ -23,7 +31,7 @@ export default function TabLayout() {
             <Ionicons
               name="home-outline"
               size={size}
-              color={typeof color === "string" ? color : "#208AEF"}
+              color={typeof color === "string" ? color : colors.tint}
             />
           ),
         }}
@@ -36,7 +44,7 @@ export default function TabLayout() {
             <Ionicons
               name="car-outline"
               size={size}
-              color={typeof color === "string" ? color : "#208AEF"}
+              color={typeof color === "string" ? color : colors.tint}
             />
           ),
         }}
@@ -49,7 +57,7 @@ export default function TabLayout() {
             <Ionicons
               name="list-outline"
               size={size}
-              color={typeof color === "string" ? color : "#208AEF"}
+              color={typeof color === "string" ? color : colors.tint}
             />
           ),
         }}
@@ -62,7 +70,7 @@ export default function TabLayout() {
             <Ionicons
               name="construct-outline"
               size={size}
-              color={typeof color === "string" ? color : "#208AEF"}
+              color={typeof color === "string" ? color : colors.tint}
             />
           ),
         }}
@@ -75,7 +83,7 @@ export default function TabLayout() {
             <Ionicons
               name="bar-chart-outline"
               size={size}
-              color={typeof color === "string" ? color : "#208AEF"}
+              color={typeof color === "string" ? color : colors.tint}
             />
           ),
         }}

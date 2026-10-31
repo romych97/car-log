@@ -1,3 +1,5 @@
+import type { AppThemeMode } from "@/theme/colors";
+
 export type FuelType = "petrol" | "diesel" | "lpg" | "other";
 
 export interface Vehicle {
@@ -56,6 +58,8 @@ export interface Reminder {
   notificationIds: string[];
 }
 
+export type { AppThemeMode } from "@/theme/colors";
+
 export type DistanceUnit = "km" | "mi";
 export type VolumeUnit = "l" | "gal";
 export type AppLanguage = "ru" | "en";
@@ -65,6 +69,7 @@ export interface Settings {
   volumeUnit: VolumeUnit;
   currency: string;
   language: AppLanguage;
+  themeMode: AppThemeMode;
   isPremium: boolean;
   selectedVehicleId: string | null;
 }
@@ -74,6 +79,7 @@ export const DEFAULT_SETTINGS: Settings = {
   volumeUnit: "l",
   currency: "RUB",
   language: "ru",
+  themeMode: "system",
   isPremium: false,
   selectedVehicleId: null,
 };
