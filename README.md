@@ -12,12 +12,24 @@
 - Напоминания ТО (шаблоны, статусы, локальные уведомления)
 - Главная: пробег, стоимость км, ближайшее ТО
 - Статистика: расходы по месяцам и категориям, расход топлива
-- Настройки: язык (ru/en), валюта, единицы, экспорт/импорт JSON‑бэкапа
+- Настройки: язык (ru/en), валюта, единицы (км/ми, л/gal в UI; в БД — км и литры), экспорт/импорт JSON (замена или объединение), PDF‑отчёт, Premium (RevenueCat)
 
 ## Требования
 
 - **Node.js** ≥ 22.13 (см. `.nvmrc`)
-- Для Android: эмулятор или устройство; для push‑напоминаний надёжнее **development build**, чем Expo Go
+- Для Android: эмулятор или устройство; для push‑напоминаний надёжнее **development build**, чем Expo Go (`eas build --profile development`)
+
+### RevenueCat (Premium)
+
+В `app.json` → `expo.extra` укажите ключи Apple/Google и идентификатор entitlement (по умолчанию `premium`). Без ключей покупки в настройках скрыты, лимиты free остаются.
+
+### Development build
+
+```bash
+npx eas-cli build --profile development --platform android
+```
+
+Локальные уведомления и in-app purchases стабильнее в dev/release сборке, чем в Expo Go.
 
 ## Запуск
 
