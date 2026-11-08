@@ -1,19 +1,26 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { getExpenseById } from "@/db/repositories/expenses";
 import { getVehicleById } from "@/db/repositories/vehicles";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Expense, Vehicle } from "@/types/models";
 
 export default function EditExpenseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const language = useSettingsStore((s) => s.language);
   const strings = useMemo(() => t(language), [language]);
   const [expense, setExpense] = useState<Expense | null>(null);
@@ -50,8 +57,3 @@ export default function EditExpenseScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-});

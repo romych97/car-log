@@ -6,11 +6,10 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { DatePickerField } from "@/components/DatePickerField";
 import { useSQLiteContext } from "expo-sqlite";
 import { startOfDay } from "date-fns";
 
@@ -21,8 +20,10 @@ import {
 } from "@/db/repositories/expenses";
 import { getCurrentOdometer } from "@/db/repositories/vehicles";
 import { MAX_ODOMETER_JUMP_KM } from "@/domain/fuel/calculations";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import type { Expense, ExpenseCategory, Vehicle } from "@/types/models";
 import { createId } from "@/utils/id";
 import { formatMoneyMinor, parseMoneyToMinor } from "@/utils/money";
@@ -56,6 +57,11 @@ export function ExpenseForm({
   language,
 }: Props) {
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const es = strings.expense;
   const uf = useUnitFormat();
@@ -65,7 +71,6 @@ export function ExpenseForm({
   const [date, setDate] = useState(() =>
     existing ? new Date(existing.date) : new Date(),
   );
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [category, setCategory] = useState<ExpenseCategory>(
     existing?.category ?? "service",
   );
@@ -187,6 +192,15 @@ export function ExpenseForm({
     ]);
   }
 
+  function Field({ label, children }: { label: string; children: ReactNode }) {
+    return (
+      <View style={styles.field}>
+        <Text style={styles.label}>{label}</Text>
+        {children}
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -240,27 +254,18 @@ export function ExpenseForm({
         </Field>
 
         <Text style={styles.label}>{strings.fuel.date}</Text>
-        <Pressable style={styles.input} onPress={() => setShowDatePicker(true)}>
-          <Text>{date.toLocaleDateString(locale)}</Text>
-        </Pressable>
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            maximumDate={new Date()}
-            onChange={(_, selected) => {
-              setShowDatePicker(Platform.OS === "ios");
-              if (selected) setDate(selected);
-            }}
-          />
-        )}
+        <DatePickerField
+          value={date}
+          onChange={setDate}
+          locale={locale}
+        />
 
         <Pressable
           style={styles.odometerToggle}
           onPress={() => setIncludeOdometer((v) => !v)}
         >
           <Text style={styles.label}>{es.includeOdometer}</Text>
-          <Text style={styles.link}>{includeOdometer ? "✓" : "—"}</Text>
+          <Text style={styles.link}>{includeOdometer ? "✓" : "-"}</Text>
         </Pressable>
         {includeOdometer && (
           <Field
@@ -299,56 +304,3 @@ export function ExpenseForm({
     </KeyboardAvoidingView>
   );
 }
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  toolbar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
-  },
-  link: { fontSize: 17, color: "#208AEF" },
-  linkDisabled: { opacity: 0.5 },
-  form: { padding: 16, gap: 12, paddingBottom: 32 },
-  field: { gap: 6 },
-  label: { fontSize: 14, color: "#666", fontWeight: "500" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-  noteInput: { minHeight: 72, textAlignVertical: "top" },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: "#f0f0f0",
-  },
-  chipActive: { backgroundColor: "#208AEF" },
-  chipText: { fontSize: 13, color: "#333" },
-  chipTextActive: { color: "#fff" },
-  odometerToggle: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  deleteButton: { marginTop: 16, paddingVertical: 14, alignItems: "center" },
-  deleteText: { fontSize: 17, color: "#D32F2F", fontWeight: "500" },
-});

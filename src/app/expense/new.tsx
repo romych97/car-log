@@ -1,18 +1,25 @@
 import { router, Stack } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { getSuggestedOdometer } from "@/db/repositories/fuelLogs";
 import { getVehicleById } from "@/db/repositories/vehicles";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Vehicle } from "@/types/models";
 
 export default function NewExpenseScreen() {
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const language = useSettingsStore((s) => s.language);
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
   const strings = useMemo(() => t(language), [language]);
@@ -55,8 +62,3 @@ export default function NewExpenseScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-});

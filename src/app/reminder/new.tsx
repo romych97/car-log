@@ -1,7 +1,7 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ReminderForm } from "@/components/ReminderForm";
@@ -11,12 +11,19 @@ import {
   REMINDER_TEMPLATES,
   type ReminderTemplateId,
 } from "@/domain/reminders/templates";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { Vehicle } from "@/types/models";
 
 export default function NewReminderScreen() {
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const language = useSettingsStore((s) => s.language);
   const vehicleId = useSettingsStore((s) => s.selectedVehicleId);
   const { template } = useLocalSearchParams<{ template?: string }>();
@@ -69,8 +76,3 @@ export default function NewReminderScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-});

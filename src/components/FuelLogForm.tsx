@@ -6,12 +6,11 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { DatePickerField } from "@/components/DatePickerField";
 import { useSQLiteContext } from "expo-sqlite";
 import { startOfDay } from "date-fns";
 
@@ -22,8 +21,10 @@ import {
   syncFuelFields,
   type FuelFieldKey,
 } from "@/domain/fuel/calculations";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import type { FuelLog, Vehicle } from "@/types/models";
 import { createId } from "@/utils/id";
 import { formatMoneyMinor, parseMoneyToMinor } from "@/utils/money";
@@ -46,6 +47,11 @@ export function FuelLogForm({
   language,
 }: Props) {
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const fs = strings.fuel;
   const uf = useUnitFormat();
@@ -56,7 +62,6 @@ export function FuelLogForm({
   const [date, setDate] = useState(() =>
     existing ? new Date(existing.date) : new Date(),
   );
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [odometerText, setOdometerText] = useState(() =>
     existing
       ? uf.formatDistanceInput(existing.odometer)
@@ -225,6 +230,21 @@ export function FuelLogForm({
     ]);
   }
 
+  function Field({
+    label,
+    children,
+  }: {
+    label: string;
+    children: ReactNode;
+  }) {
+    return (
+      <View style={styles.field}>
+        <Text style={styles.label}>{label}</Text>
+        {children}
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -246,20 +266,11 @@ export function FuelLogForm({
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.label}>{fs.date}</Text>
-        <Pressable style={styles.input} onPress={() => setShowDatePicker(true)}>
-          <Text>{date.toLocaleDateString(locale)}</Text>
-        </Pressable>
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            maximumDate={new Date()}
-            onChange={(_, selected) => {
-              setShowDatePicker(Platform.OS === "ios");
-              if (selected) setDate(selected);
-            }}
-          />
-        )}
+        <DatePickerField
+          value={date}
+          onChange={setDate}
+          locale={locale}
+        />
 
         <Field
           label={
@@ -328,60 +339,3 @@ export function FuelLogForm({
     </KeyboardAvoidingView>
   );
 }
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  toolbar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
-  },
-  link: { fontSize: 17, color: "#208AEF" },
-  linkDisabled: { opacity: 0.5 },
-  form: { padding: 16, gap: 12, paddingBottom: 32 },
-  field: { gap: 6 },
-  label: { fontSize: 14, color: "#666", fontWeight: "500" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-  noteInput: { minHeight: 72, textAlignVertical: "top" },
-  switchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  deleteButton: {
-    marginTop: 16,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  deleteText: {
-    fontSize: 17,
-    color: "#D32F2F",
-    fontWeight: "500",
-  },
-});

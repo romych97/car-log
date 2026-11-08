@@ -6,11 +6,10 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { DatePickerField } from "@/components/DatePickerField";
 import { useSQLiteContext } from "expo-sqlite";
 import { startOfDay } from "date-fns";
 
@@ -25,8 +24,10 @@ import { listFuelLogsByVehicle } from "@/db/repositories/fuelLogs";
 import { getCurrentOdometer } from "@/db/repositories/vehicles";
 import { FREE_REMINDER_LIMIT } from "@/domain/reminders/templates";
 import { computeDailyKmAverage } from "@/domain/reminders/status";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import {
   cancelReminderNotifications,
   requestReminderPermissions,
@@ -60,6 +61,11 @@ export function ReminderForm({
   language,
 }: Props) {
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const rs = strings.reminder;
   const uf = useUnitFormat();
@@ -85,7 +91,6 @@ export function ReminderForm({
   const [lastDate, setLastDate] = useState(() =>
     existing ? new Date(existing.lastDate) : new Date(),
   );
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [lastOdometerText, setLastOdometerText] = useState(() =>
     existing
       ? uf.formatDistanceInput(existing.lastOdometer)
@@ -214,6 +219,15 @@ export function ReminderForm({
     ]);
   }
 
+  function Field({ label, children }: { label: string; children: ReactNode }) {
+    return (
+      <View style={styles.field}>
+        <Text style={styles.label}>{label}</Text>
+        {children}
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -258,22 +272,11 @@ export function ReminderForm({
         </Field>
 
         <Field label={rs.lastServiceDate}>
-          <Pressable onPress={() => setShowDatePicker(true)}>
-            <Text style={styles.dateValue}>
-              {lastDate.toLocaleDateString(locale)}
-            </Text>
-          </Pressable>
-          {showDatePicker && (
-            <DateTimePicker
-              value={lastDate}
-              mode="date"
-              maximumDate={new Date()}
-              onChange={(_, d) => {
-                setShowDatePicker(Platform.OS === "ios");
-                if (d) setLastDate(d);
-              }}
-            />
-          )}
+          <DatePickerField
+            value={lastDate}
+            onChange={setLastDate}
+            locale={locale}
+          />
         </Field>
 
         <Field
@@ -306,51 +309,3 @@ export function ReminderForm({
     </KeyboardAvoidingView>
   );
 }
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { padding: 16, gap: 16 },
-  disclaimer: {
-    fontSize: 13,
-    color: "#666",
-    lineHeight: 18,
-  },
-  field: { gap: 6 },
-  label: { fontSize: 14, color: "#444", fontWeight: "500" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  dateValue: { fontSize: 16, paddingVertical: 8 },
-  actions: { gap: 10, marginTop: 8 },
-  primary: {
-    backgroundColor: "#208AEF",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryText: { color: "#fff", fontWeight: "600", fontSize: 17 },
-  secondary: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
-  secondaryText: { fontSize: 16, color: "#333" },
-  danger: { paddingVertical: 12, alignItems: "center" },
-  dangerText: { color: "#D32F2F", fontSize: 16, fontWeight: "600" },
-});

@@ -28,6 +28,9 @@ import { parseBackupJson, importErrorMessage } from "@/backup/serialize";
 import { saveSettings } from "@/db/repositories/settings";
 import { syncAllReminderNotifications } from "@/notifications/reminders";
 import {
+  attachPremiumCustomerInfoListener,
+  getPurchaseFailureAlert,
+  getRestoreFailureAlert,
   isPurchasesConfigured,
   purchasePremiumPackage,
   restorePremiumPurchases,
@@ -194,40 +197,44 @@ export default function SettingsScreen() {
   }, [runImportLastExport]);
 
   const onBuyPremium = useCallback(async () => {
-    if (!purchasesReady) return;
+    if (!purchasesReady || busy) return;
     setBusy(true);
     try {
       const result = await purchasePremiumPackage();
       if (result.userCanceled) return;
       const active = await syncPremiumToDatabase(db);
       patch({ isPremium: active });
-      if (active) Alert.alert(ss.premiumSuccess);
+      if (active) {
+        Alert.alert(ss.premiumSuccess);
+      } else {
+        Alert.alert(ss.premiumNotGrantedTitle, ss.premiumNotGrantedHint);
+      }
     } catch (err) {
       console.error("[carlog] Purchase failed:", err);
-      Alert.alert(ss.importError, String(err));
+      const { title, message } = getPurchaseFailureAlert(err, ss);
+      Alert.alert(title, message);
     } finally {
       setBusy(false);
     }
-  }, [db, patch, purchasesReady, ss]);
+  }, [busy, db, patch, purchasesReady, ss]);
 
   const onRestorePremium = useCallback(async () => {
-    if (!purchasesReady) return;
+    if (!purchasesReady || busy) return;
     setBusy(true);
     try {
-      const active = await restorePremiumPurchases();
-      await saveSettings(db, {
-        ...useSettingsStore.getState(),
-        isPremium: active,
-      });
+      const active = await restorePremiumPurchases(db);
       patch({ isPremium: active });
-      Alert.alert(ss.premiumRestoreDone);
+      Alert.alert(
+        active ? ss.premiumSuccess : ss.premiumRestoreDone,
+      );
     } catch (err) {
       console.error("[carlog] Restore failed:", err);
-      Alert.alert(ss.importError, String(err));
+      const { title, message } = getRestoreFailureAlert(err, ss);
+      Alert.alert(title, message);
     } finally {
       setBusy(false);
     }
-  }, [db, patch, purchasesReady, ss]);
+  }, [busy, db, patch, purchasesReady, ss]);
 
   const onExportPdf = useCallback(async () => {
     if (!vehicleId) {

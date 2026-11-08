@@ -1,9 +1,10 @@
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ActionSheetModal } from "@/components/ActionSheetModal";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import {
   ConsumptionLineSvgChart,
@@ -120,6 +121,8 @@ export default function StatsScreen() {
   const strings = useMemo(() => t(language), [language]);
   const uf = useUnitFormat();
   const st = strings.stats;
+  const js = strings.journal;
+  const [addOpen, setAddOpen] = useState(false);
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
@@ -201,7 +204,8 @@ export default function StatsScreen() {
           <Text style={styles.title}>{st.title}</Text>
         </View>
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>{st.noVehicle}</Text>
+          <Text style={styles.emptyTitle}>{strings.home.noVehicleTitle}</Text>
+          <Text style={styles.emptyBody}>{strings.home.noVehicleBody}</Text>
         </View>
       </SafeAreaView>
     );
@@ -212,7 +216,10 @@ export default function StatsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{st.title}</Text>
       </View>
-      <ScreenScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScreenScrollView
+        style={styles.tabScroll}
+        contentContainerStyle={styles.tabScrollContent}
+      >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{st.monthlySpend}</Text>
           <Text style={styles.hint}>{st.monthlyHint}</Text>
@@ -269,6 +276,28 @@ export default function StatsScreen() {
           )}
         </View>
       </ScreenScrollView>
+      <View style={styles.tabFooter}>
+        <Pressable style={styles.tabFooterBtn} onPress={() => setAddOpen(true)}>
+          <Text style={styles.tabFooterBtnText}>{js.addButton}</Text>
+        </Pressable>
+      </View>
+      <ActionSheetModal
+        visible={addOpen}
+        title={js.addTitle}
+        onClose={() => setAddOpen(false)}
+        options={[
+          {
+            key: "fuel",
+            label: strings.home.addFuel,
+            onPress: () => router.push("/fuel/new"),
+          },
+          {
+            key: "expense",
+            label: strings.home.addExpense,
+            onPress: () => router.push("/expense/new"),
+          },
+        ]}
+      />
     </SafeAreaView>
   );
 }

@@ -72,7 +72,8 @@ export default function MaintenanceScreen() {
 
       {!vehicleId ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>{strings.home.noVehicleTitle}</Text>
+          <Text style={styles.emptyTitle}>{strings.home.noVehicleTitle}</Text>
+          <Text style={styles.emptyBody}>{strings.home.noVehicleBody}</Text>
         </View>
       ) : (
         <>
@@ -132,13 +133,12 @@ export default function MaintenanceScreen() {
               );
             }}
           />
-
-          <View style={styles.footer}>
+          <View style={styles.tabFooter}>
             <Pressable
-              style={styles.primary}
+              style={styles.tabFooterBtn}
               onPress={() => setAddOpen(true)}
             >
-              <Text style={styles.primaryText}>{rs.add}</Text>
+              <Text style={styles.tabFooterBtnText}>{rs.addButton}</Text>
             </Pressable>
           </View>
         </>

@@ -6,11 +6,10 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { DatePickerField } from "@/components/DatePickerField";
 import { useSQLiteContext } from "expo-sqlite";
 import { startOfDay } from "date-fns";
 
@@ -18,8 +17,10 @@ import { insertExpense, listExpensesByVehicle } from "@/db/repositories/expenses
 import { listFuelLogsByVehicle } from "@/db/repositories/fuelLogs";
 import { updateReminder } from "@/db/repositories/reminders";
 import { computeDailyKmAverage } from "@/domain/reminders/status";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import { syncReminderNotifications } from "@/notifications/reminders";
 import type { Reminder, Vehicle } from "@/types/models";
 import { createId } from "@/utils/id";
@@ -43,6 +44,11 @@ export function ReminderCompleteForm({
   language,
 }: Props) {
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const strings = useMemo(() => t(language), [language]);
   const rs = strings.reminder;
   const uf = useUnitFormat();
@@ -50,7 +56,6 @@ export function ReminderCompleteForm({
   const locale = language === "ru" ? "ru-RU" : "en-US";
 
   const [date, setDate] = useState(() => new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [odometerText, setOdometerText] = useState(() =>
     suggestedOdometer != null
       ? uf.formatDistanceInput(suggestedOdometer)
@@ -131,22 +136,11 @@ export function ReminderCompleteForm({
 
         <View style={styles.field}>
           <Text style={styles.label}>{strings.fuel.date}</Text>
-          <Pressable onPress={() => setShowDatePicker(true)}>
-            <Text style={styles.dateValue}>
-              {date.toLocaleDateString(locale)}
-            </Text>
-          </Pressable>
-          {showDatePicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              maximumDate={new Date()}
-              onChange={(_, d) => {
-                setShowDatePicker(Platform.OS === "ios");
-                if (d) setDate(d);
-              }}
-            />
-          )}
+          <DatePickerField
+            value={date}
+            onChange={setDate}
+            locale={locale}
+          />
         </View>
 
         <View style={styles.field}>
@@ -193,37 +187,3 @@ export function ReminderCompleteForm({
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { padding: 16, gap: 16 },
-  heading: { fontSize: 20, fontWeight: "700" },
-  hint: { fontSize: 14, color: "#666", lineHeight: 20 },
-  field: { gap: 6 },
-  label: { fontSize: 14, color: "#444", fontWeight: "500" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  note: { minHeight: 72, textAlignVertical: "top" },
-  dateValue: { fontSize: 16, paddingVertical: 8 },
-  primary: {
-    backgroundColor: "#208AEF",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  primaryText: { color: "#fff", fontWeight: "600", fontSize: 17 },
-  secondary: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
-  secondaryText: { fontSize: 16, color: "#333" },
-});

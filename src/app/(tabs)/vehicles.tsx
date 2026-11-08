@@ -1,10 +1,14 @@
 import { router, useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { listAllVehicles } from "@/db/repositories/vehicles";
+import {
+  countActiveVehicles,
+  listAllVehicles,
+  unarchiveVehicle,
+} from "@/db/repositories/vehicles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { createVehiclesScreenStyles } from "@/theme/screenStyles";
@@ -14,6 +18,7 @@ import type { Vehicle } from "@/types/models";
 export default function VehiclesTabScreen() {
   const db = useSQLiteContext();
   const language = useSettingsStore((s) => s.language);
+  const isPremium = useSettingsStore((s) => s.isPremium);
   const { colors } = useAppTheme();
   const styles = useMemo(
     () => createVehiclesScreenStyles(colors),
@@ -33,6 +38,29 @@ export default function VehiclesTabScreen() {
     }, [refresh]),
   );
 
+  const confirmUnarchive = useCallback(
+    (vehicle: Vehicle) => {
+      void (async () => {
+        const activeCount = await countActiveVehicles(db);
+        if (!isPremium && activeCount >= 1) {
+          Alert.alert(vs.freeLimit);
+          return;
+        }
+        Alert.alert(vs.unarchiveConfirmTitle, vs.unarchiveConfirmMessage, [
+          { text: strings.common.cancel, style: "cancel" },
+          {
+            text: vs.unarchive,
+            onPress: async () => {
+              await unarchiveVehicle(db, vehicle.id);
+              refresh();
+            },
+          },
+        ]);
+      })();
+    },
+    [db, isPremium, refresh, strings.common.cancel, vs],
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
@@ -48,14 +76,6 @@ export default function VehiclesTabScreen() {
         ListEmptyComponent={
           <Text style={styles.empty}>{strings.home.noVehicleBody}</Text>
         }
-        ListHeaderComponent={
-          <Pressable
-            style={styles.addBtn}
-            onPress={() => router.push("/vehicle/new")}
-          >
-            <Text style={styles.addBtnText}>+ {strings.home.addVehicle}</Text>
-          </Pressable>
-        }
         renderItem={({ item }) => (
           <Pressable
             style={styles.row}
@@ -70,13 +90,29 @@ export default function VehiclesTabScreen() {
               )}
             </View>
             {item.archived ? (
-              <Text style={styles.archived}>{vs.archivedLabel}</Text>
+              <Pressable
+                hitSlop={8}
+                onPress={() => confirmUnarchive(item)}
+                style={styles.unarchiveBtn}
+              >
+                <Text style={styles.unarchiveText}>{vs.unarchive}</Text>
+              </Pressable>
             ) : (
               <Text style={styles.chevron}>›</Text>
             )}
           </Pressable>
         )}
       />
+      <View style={styles.tabFooter}>
+        <Pressable
+          style={styles.tabFooterBtn}
+          onPress={() => router.push("/vehicle/new")}
+        >
+          <Text style={styles.tabFooterBtnText}>
+            {strings.home.addVehicleButton}
+          </Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }

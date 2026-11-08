@@ -108,14 +108,9 @@ export default function JournalScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>{js.title}</Text>
-        {vehicleId && (
-          <Pressable onPress={() => setAddOpen(true)} hitSlop={8}>
-            <Text style={styles.link}>+</Text>
-          </Pressable>
-        )}
       </View>
 
-      {vehicleId && (
+      {vehicleId ? (
         <View style={styles.filters}>
           {filters.map((f) => (
             <Pressable
@@ -134,70 +129,94 @@ export default function JournalScreen() {
             </Pressable>
           ))}
         </View>
-      )}
+      ) : null}
 
       {!vehicleId ? (
-        <View style={styles.center}>
-          <Text style={styles.muted}>{strings.home.noVehicleTitle}</Text>
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>{strings.home.noVehicleTitle}</Text>
+          <Text style={styles.emptyBody}>{strings.home.noVehicleBody}</Text>
         </View>
       ) : (
+        <>
         <FlatList
           data={entries}
           keyExtractor={(item) => item.id}
           style={{ flex: 1 }}
           contentContainerStyle={
-            entries.length === 0 ? styles.emptyList : styles.listPad
+            entries.length === 0 ? styles.listEmpty : styles.list
           }
-          ListEmptyComponent={<Text style={styles.muted}>{js.empty}</Text>}
+          ListEmptyComponent={
+            <View style={styles.emptyBlock}>
+              <Text style={styles.emptyTitle}>{js.empty}</Text>
+              <Text style={styles.emptyBody}>{js.emptyBody}</Text>
+            </View>
+          }
           renderItem={({ item }) => (
             <ReanimatedSwipeable
+              containerStyle={styles.swipeable}
               friction={2}
               overshootRight={false}
               renderRightActions={() => (
-                <Pressable
-                  style={styles.swipeDelete}
-                  onPress={() => confirmDelete(item)}
-                >
-                  <Text style={styles.swipeDeleteText}>{js.deleteAction}</Text>
-                </Pressable>
+                <View style={styles.swipeDeleteOuter}>
+                  <Pressable
+                    style={styles.swipeDelete}
+                    onPress={() => confirmDelete(item)}
+                  >
+                    <Text style={styles.swipeDeleteText}>{js.deleteAction}</Text>
+                  </Pressable>
+                </View>
               )}
             >
-              <Pressable style={styles.row} onPress={() => openEntry(item)}>
-                <View style={styles.rowMain}>
-                  <View style={styles.rowTitleLine}>
-                    <Text style={styles.typeBadge}>
-                      {item.kind === "fuel"
-                        ? js.typeFuel
-                        : js.typeExpense}
-                    </Text>
-                    <Text style={styles.rowDate}>
-                      {new Date(item.date).toLocaleDateString(locale)}
-                    </Text>
+              <Pressable style={styles.card} onPress={() => openEntry(item)}>
+                <View style={styles.cardTop}>
+                  <View style={styles.cardMain}>
+                    <View style={styles.rowTitleLine}>
+                      <Text style={styles.typeBadge}>
+                        {item.kind === "fuel"
+                          ? js.typeFuel
+                          : js.typeExpense}
+                      </Text>
+                      <Text style={styles.cardTitle}>
+                        {new Date(item.date).toLocaleDateString(locale)}
+                      </Text>
+                    </View>
+                    {item.kind === "fuel" ? (
+                      <Text style={styles.cardMeta}>
+                        {uf.formatDistance(item.data.odometer)} ·{" "}
+                        {uf.formatVolume(item.data.volume)}
+                        {item.data.fullTank
+                          ? ` · ${strings.fuel.fullTankBadge}`
+                          : ""}
+                      </Text>
+                    ) : (
+                      <Text style={styles.cardMeta}>
+                        {item.data.title} ·{" "}
+                        {strings.expense.categories[item.data.category]}
+                      </Text>
+                    )}
                   </View>
-                  {item.kind === "fuel" ? (
-                    <Text style={styles.rowMeta}>
-                      {uf.formatDistance(item.data.odometer)} ·{" "}
-                      {uf.formatVolume(item.data.volume)}
-                      {item.data.fullTank ? ` · ${strings.fuel.fullTankBadge}` : ""}
-                    </Text>
-                  ) : (
-                    <Text style={styles.rowMeta}>
-                      {item.data.title} · {strings.expense.categories[item.data.category]}
-                    </Text>
-                  )}
+                  <Text style={styles.rowAmount}>
+                    {formatMoneyMinor(
+                      item.kind === "fuel"
+                        ? item.data.totalCost
+                        : item.data.amount,
+                      locale,
+                    )}
+                  </Text>
                 </View>
-                <Text style={styles.rowAmount}>
-                  {formatMoneyMinor(
-                    item.kind === "fuel"
-                      ? item.data.totalCost
-                      : item.data.amount,
-                    locale,
-                  )}
-                </Text>
               </Pressable>
             </ReanimatedSwipeable>
           )}
         />
+        <View style={styles.tabFooter}>
+          <Pressable
+            style={styles.tabFooterBtn}
+            onPress={() => setAddOpen(true)}
+          >
+            <Text style={styles.tabFooterBtnText}>{js.addButton}</Text>
+          </Pressable>
+        </View>
+        </>
       )}
 
       <ActionSheetModal

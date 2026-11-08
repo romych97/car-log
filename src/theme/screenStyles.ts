@@ -2,6 +2,159 @@ import { StyleSheet } from "react-native";
 
 import type { AppColors } from "@/theme/colors";
 
+/** Space above tab bar for fixed bottom primary action (padding 16 + button + padding 16). */
+export const TAB_SCREEN_FOOTER_PADDING = 88;
+
+function tabScreenFooter(colors: AppColors) {
+  return {
+    tabFooter: {
+      position: "absolute" as const,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 16,
+      backgroundColor: colors.background,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+    tabFooterBtn: {
+      backgroundColor: colors.tint,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: "center" as const,
+    },
+    tabFooterBtnText: {
+      color: "#fff",
+      fontWeight: "600" as const,
+      fontSize: 16,
+    },
+    tabList: {
+      padding: 16,
+      paddingTop: 0,
+      paddingBottom: TAB_SCREEN_FOOTER_PADDING,
+    },
+    tabListEmpty: {
+      padding: 16,
+      flexGrow: 1,
+      paddingBottom: TAB_SCREEN_FOOTER_PADDING,
+    },
+    tabScroll: { flex: 1 },
+    tabScrollContent: {
+      padding: 16,
+      paddingBottom: TAB_SCREEN_FOOTER_PADDING,
+    },
+  };
+}
+
+export function createFormScreenStyles(colors: AppColors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.background },
+    flex: { flex: 1 },
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background,
+    },
+    loading: { padding: 24, fontSize: 16, color: colors.text },
+    toolbar: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    link: { fontSize: 17, color: colors.tint },
+    linkDisabled: { opacity: 0.5 },
+    form: { padding: 16, gap: 12, paddingBottom: 32 },
+    scroll: { padding: 16, gap: 16 },
+    field: { gap: 6 },
+    label: { fontSize: 14, color: colors.textMuted, fontWeight: "500" },
+    heading: { fontSize: 20, fontWeight: "700", color: colors.text },
+    hint: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
+    disclaimer: {
+      fontSize: 13,
+      color: colors.textMuted,
+      lineHeight: 18,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 16,
+      backgroundColor: colors.surface,
+      color: colors.text,
+    },
+    noteInput: { minHeight: 72, textAlignVertical: "top" },
+    note: { minHeight: 72, textAlignVertical: "top" },
+    dateValue: { fontSize: 16, paddingVertical: 8, color: colors.text },
+    chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: colors.chipBackground,
+    },
+    chipActive: { backgroundColor: colors.tint },
+    chipText: { fontSize: 14, color: colors.chipText },
+    chipTextActive: { color: "#fff" },
+    switchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    odometerToggle: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    actions: { gap: 10, marginTop: 8 },
+    primary: {
+      backgroundColor: colors.tint,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: "center",
+    },
+    primaryText: { color: "#fff", fontWeight: "600", fontSize: 17 },
+    secondary: {
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    secondaryText: { fontSize: 16, color: colors.text },
+    deleteButton: { marginTop: 16, paddingVertical: 14, alignItems: "center" },
+    deleteText: { fontSize: 17, color: "#D32F2F", fontWeight: "500" },
+    danger: { paddingVertical: 12, alignItems: "center" },
+    dangerText: { color: "#D32F2F", fontSize: 16, fontWeight: "600" },
+    archiveBtn: {
+      marginTop: 24,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "#D32F2F",
+      backgroundColor: "rgba(211, 47, 47, 0.12)",
+    },
+    archiveText: { color: "#D32F2F", fontSize: 17, fontWeight: "600" },
+    unarchiveBtn: {
+      marginTop: 24,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.tint,
+      backgroundColor: colors.optionSelected,
+    },
+    unarchiveText: { color: colors.tint, fontSize: 17, fontWeight: "600" },
+  });
+}
+
 /** Shared tab-screen colors (extend locally for layout-specific styles). */
 export function createTabScreenStyles(colors: AppColors) {
   return StyleSheet.create({
@@ -51,11 +204,33 @@ export function createStatsScreenStyles(colors: AppColors) {
       color: colors.textMuted,
       paddingVertical: 24,
     },
-    emptyText: { fontSize: 16, color: colors.textSecondary },
-    content: { padding: 16, paddingBottom: 32 },
+    emptyText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: "600",
+      marginBottom: 8,
+      color: colors.text,
+      textAlign: "center",
+    },
+    emptyBody: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      lineHeight: 22,
+      textAlign: "center",
+    },
+    content: { padding: 16, paddingBottom: TAB_SCREEN_FOOTER_PADDING },
     scroll: { flex: 1 },
     chartSlot: { minHeight: 200 },
-    empty: { flex: 1, padding: 24, justifyContent: "center" },
+    empty: {
+      flex: 1,
+      padding: 24,
+      justifyContent: "center",
+      alignItems: "center",
+    },
     axisText: { fontSize: 10, color: colors.chartAxis },
     legend: { fontSize: 12, color: colors.textMuted, marginTop: 10 },
     monthlyChartBlock: { marginBottom: 4 },
@@ -83,6 +258,7 @@ export function createStatsScreenStyles(colors: AppColors) {
       color: colors.textMuted,
       alignSelf: "flex-end",
     },
+    ...tabScreenFooter(colors),
   });
 }
 
@@ -276,17 +452,10 @@ export function createVehiclesScreenStyles(colors: AppColors) {
     safe: { flex: 1, backgroundColor: colors.background },
     header: { paddingHorizontal: 16, paddingVertical: 12 },
     title: { fontSize: 22, fontWeight: "700", color: colors.text },
-    list: { padding: 16, paddingTop: 0 },
-    emptyList: { padding: 16, flexGrow: 1 },
+    list: tabScreenFooter(colors).tabList,
+    emptyList: tabScreenFooter(colors).tabListEmpty,
     empty: { fontSize: 16, color: colors.textMuted, paddingVertical: 24 },
-    addBtn: {
-      backgroundColor: colors.tint,
-      borderRadius: 12,
-      paddingVertical: 14,
-      alignItems: "center",
-      marginBottom: 16,
-    },
-    addBtnText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+    ...tabScreenFooter(colors),
     row: {
       flexDirection: "row",
       alignItems: "center",
@@ -301,6 +470,18 @@ export function createVehiclesScreenStyles(colors: AppColors) {
     name: { fontSize: 17, fontWeight: "600", color: colors.text },
     meta: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
     archived: { fontSize: 13, color: colors.textMuted },
+    unarchiveBtn: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.tint,
+    },
+    unarchiveText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.tint,
+    },
     chevron: { fontSize: 22, color: colors.textMuted },
   });
 }
@@ -309,14 +490,10 @@ export function createJournalScreenStyles(colors: AppColors) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.background },
     header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
       paddingHorizontal: 16,
       paddingVertical: 12,
     },
     title: { fontSize: 22, fontWeight: "700", color: colors.text },
-    link: { fontSize: 28, color: colors.tint, fontWeight: "300" },
     filters: {
       flexDirection: "row",
       gap: 8,
@@ -332,29 +509,50 @@ export function createJournalScreenStyles(colors: AppColors) {
     chipActive: { backgroundColor: colors.tint },
     chipText: { fontSize: 14, color: colors.chipText },
     chipTextActive: { color: "#fff" },
-    center: {
+    empty: {
       flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
       padding: 24,
+      justifyContent: "center",
+      alignItems: "center",
     },
-    emptyList: { flexGrow: 1, justifyContent: "center", padding: 24 },
-    listPad: { paddingBottom: 100 },
-    muted: {
-      fontSize: 16,
-      color: colors.textMuted,
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: "600",
+      marginBottom: 8,
+      color: colors.text,
       textAlign: "center",
     },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.surface,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+    emptyBody: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      lineHeight: 22,
+      textAlign: "center",
     },
-    rowMain: { flex: 1, gap: 4 },
+    list: tabScreenFooter(colors).tabList,
+    listEmpty: tabScreenFooter(colors).tabListEmpty,
+    emptyBlock: { paddingVertical: 32, alignItems: "center", width: "100%" },
+    ...tabScreenFooter(colors),
+    swipeable: {
+      marginBottom: 12,
+      borderRadius: 12,
+      overflow: "hidden",
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+    },
+    cardTop: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 8,
+    },
+    cardMain: { flex: 1, gap: 4 },
+    cardTitle: { fontSize: 17, fontWeight: "600", color: colors.text },
+    cardMeta: { fontSize: 14, color: colors.textMuted },
     rowTitleLine: { flexDirection: "row", alignItems: "center", gap: 8 },
     typeBadge: {
       fontSize: 11,
@@ -362,15 +560,18 @@ export function createJournalScreenStyles(colors: AppColors) {
       color: colors.tint,
       textTransform: "uppercase",
     },
-    rowDate: { fontSize: 16, fontWeight: "600", color: colors.text },
-    rowMeta: { fontSize: 14, color: colors.textMuted },
     rowAmount: { fontSize: 16, fontWeight: "600", color: colors.text },
+    swipeDeleteOuter: {
+      flexDirection: "row",
+      alignItems: "stretch",
+      width: 88,
+    },
     swipeDelete: {
+      flex: 1,
       backgroundColor: "#D32F2F",
       justifyContent: "center",
-      alignItems: "flex-end",
-      paddingHorizontal: 20,
-      width: 96,
+      alignItems: "center",
+      paddingHorizontal: 12,
     },
     swipeDeleteText: { color: "#fff", fontWeight: "600" },
   });
@@ -381,21 +582,33 @@ export function createMaintenanceScreenStyles(colors: AppColors) {
     safe: { flex: 1, backgroundColor: colors.background },
     header: { paddingHorizontal: 16, paddingVertical: 12 },
     title: { fontSize: 22, fontWeight: "700", color: colors.text },
-    list: { padding: 16, paddingBottom: 100 },
-    listEmpty: { flexGrow: 1, padding: 16 },
-    empty: { flex: 1, padding: 24, justifyContent: "center" },
-    emptyText: { fontSize: 16, color: colors.textSecondary },
-    emptyBlock: { paddingVertical: 32 },
+    list: tabScreenFooter(colors).tabList,
+    listEmpty: tabScreenFooter(colors).tabListEmpty,
+    empty: {
+      flex: 1,
+      padding: 24,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    emptyBlock: { paddingVertical: 32, alignItems: "center", width: "100%" },
+    ...tabScreenFooter(colors),
     emptyTitle: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: "600",
       marginBottom: 8,
       color: colors.text,
+      textAlign: "center",
     },
     emptyBody: {
-      fontSize: 15,
-      color: colors.textMuted,
+      fontSize: 16,
+      color: colors.textSecondary,
       lineHeight: 22,
+      textAlign: "center",
     },
     card: {
       backgroundColor: colors.surface,
@@ -429,22 +642,5 @@ export function createMaintenanceScreenStyles(colors: AppColors) {
     },
     doneButtonText: { color: "#fff", fontWeight: "600" },
     editLink: { color: colors.tint, fontSize: 15 },
-    footer: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      padding: 16,
-      backgroundColor: colors.background,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.border,
-    },
-    primary: {
-      backgroundColor: colors.tint,
-      borderRadius: 12,
-      paddingVertical: 14,
-      alignItems: "center",
-    },
-    primaryText: { color: "#fff", fontSize: 17, fontWeight: "600" },
   });
 }

@@ -80,6 +80,13 @@ export async function archiveVehicle(
   await db.runAsync("UPDATE vehicles SET archived = 1 WHERE id = ?", id);
 }
 
+export async function unarchiveVehicle(
+  db: SQLiteDatabase,
+  id: string,
+): Promise<void> {
+  await db.runAsync("UPDATE vehicles SET archived = 0 WHERE id = ?", id);
+}
+
 export async function listAllVehicles(
   db: SQLiteDatabase,
 ): Promise<Vehicle[]> {

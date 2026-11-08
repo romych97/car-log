@@ -1,14 +1,14 @@
 import { AppTextInput } from "@/components/AppTextInput";
+import { FormField } from "@/components/FormField";
 import { router, Stack } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -19,8 +19,10 @@ import {
   insertVehicle,
 } from "@/db/repositories/vehicles";
 import { setSelectedVehicleId } from "@/db/repositories/settings";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { t } from "@/i18n/translations";
 import { useUnitFormat } from "@/hooks/useUnitFormat";
+import { createFormScreenStyles } from "@/theme/screenStyles";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { FuelType } from "@/types/models";
 import { createId } from "@/utils/id";
@@ -36,6 +38,11 @@ function parseOptionalNumber(value: string): number | undefined {
 
 export default function NewVehicleScreen() {
   const db = useSQLiteContext();
+  const { colors } = useAppTheme();
+  const styles = useMemo(
+    () => createFormScreenStyles(colors),
+    [colors],
+  );
   const language = useSettingsStore((s) => s.language);
   const isPremium = useSettingsStore((s) => s.isPremium);
   const setSelected = useSettingsStore((s) => s.setSelectedVehicleId);
@@ -121,7 +128,7 @@ export default function NewVehicleScreen() {
           contentContainerStyle={styles.form}
           keyboardShouldPersistTaps="handled"
         >
-          <Field label={vs.name}>
+          <FormField label={vs.name} styles={styles}>
             <AppTextInput
               style={styles.input}
               value={name}
@@ -129,21 +136,21 @@ export default function NewVehicleScreen() {
               placeholder={vs.namePlaceholder}
               autoCapitalize="words"
             />
-          </Field>
-          <Field label={vs.make}>
+          </FormField>
+          <FormField label={vs.make} styles={styles}>
             <AppTextInput style={styles.input} value={make} onChangeText={setMake} />
-          </Field>
-          <Field label={vs.model}>
+          </FormField>
+          <FormField label={vs.model} styles={styles}>
             <AppTextInput style={styles.input} value={model} onChangeText={setModel} />
-          </Field>
-          <Field label={vs.year}>
+          </FormField>
+          <FormField label={vs.year} styles={styles}>
             <AppTextInput
               style={styles.input}
               value={year}
               onChangeText={setYear}
               keyboardType="number-pad"
             />
-          </Field>
+          </FormField>
           <Text style={styles.label}>{vs.fuelType}</Text>
           <View style={styles.chips}>
             {FUEL_TYPES.map((type) => (
@@ -163,8 +170,9 @@ export default function NewVehicleScreen() {
               </Pressable>
             ))}
           </View>
-          <Field
+          <FormField
             label={uf.volumeUnit === "gal" ? u.tankGal : u.tankL}
+            styles={styles}
           >
             <AppTextInput
               style={styles.input}
@@ -172,11 +180,12 @@ export default function NewVehicleScreen() {
               onChangeText={setTankCapacity}
               keyboardType="decimal-pad"
             />
-          </Field>
-          <Field
+          </FormField>
+          <FormField
             label={
               uf.distanceUnit === "mi" ? u.odometerMi : u.odometerKm
             }
+            styles={styles}
           >
             <AppTextInput
               style={styles.input}
@@ -184,60 +193,9 @@ export default function NewVehicleScreen() {
               onChangeText={setInitialOdometer}
               keyboardType="decimal-pad"
             />
-          </Field>
+          </FormField>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
-  flex: { flex: 1 },
-  toolbar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
-  },
-  link: { fontSize: 17, color: "#208AEF" },
-  linkDisabled: { opacity: 0.5 },
-  form: { padding: 16, gap: 12, paddingBottom: 32 },
-  field: { gap: 6 },
-  label: { fontSize: 14, color: "#666", fontWeight: "500" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#f0f0f0",
-  },
-  chipActive: { backgroundColor: "#208AEF" },
-  chipText: { fontSize: 14, color: "#333" },
-  chipTextActive: { color: "#fff" },
-});

@@ -6,7 +6,7 @@ import { getSettings, setSelectedVehicleId } from "@/db/repositories/settings";
 import { listActiveVehicles } from "@/db/repositories/vehicles";
 import { syncAllReminderNotifications } from "@/notifications/reminders";
 import { loadLastExportUriFromDisk } from "@/backup/share";
-import { syncPremiumToDatabase } from "@/purchases/revenueCat";
+import { syncPremiumToDatabase, attachPremiumCustomerInfoListener } from "@/purchases/revenueCat";
 import { useSettingsStore } from "@/store/settingsStore";
 
 type Props = {
@@ -19,6 +19,14 @@ export function AppBootstrap({ children }: Props) {
   const setSelected = useSettingsStore((s) => s.setSelectedVehicleId);
   const hydrated = useSettingsStore((s) => s.hydrated);
   const [ready, setReady] = useState(false);
+
+  const patch = useSettingsStore((s) => s.patch);
+
+  useEffect(() => {
+    attachPremiumCustomerInfoListener(db, (active) => {
+      patch({ isPremium: active });
+    });
+  }, [db, patch]);
 
   useEffect(() => {
     let cancelled = false;
